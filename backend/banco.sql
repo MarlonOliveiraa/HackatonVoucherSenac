@@ -11,30 +11,12 @@ CREATE TABLE cliente (
 );
 
 -- ===========================
---   TABELA USUARIOS
--- ===========================
-
-CREATE TABLE usuarios (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    nome_completo VARCHAR(150) NOT NULL,
-    email VARCHAR(150) NOT NULL UNIQUE,
-    senha_hash VARCHAR(255) NOT NULL,
-    status ENUM('ativo', 'inativo') DEFAULT 'ativo',
-    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- ===========================
 --   TABELA SERVICO / TAREFA
 -- ===========================
 CREATE TABLE servico (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    cliente_id INT NOT NULL,
     nome VARCHAR(150) NOT NULL,
-    valor DECIMAL(10,2),
-    tempo_estimado VARCHAR(100),
-    status VARCHAR(30),
-    data DATE,
-    FOREIGN KEY (cliente_id) REFERENCES cliente(id)
+    descricao TEXT
 );
 
 -- ===========================
@@ -42,11 +24,19 @@ CREATE TABLE servico (
 -- ===========================
 CREATE TABLE orcamento (
     id INT AUTO_INCREMENT PRIMARY KEY,
+
     cliente_id INT NOT NULL,
-    total DECIMAL(10,2),
-    data DATE,
-    status VARCHAR(30),
-    FOREIGN KEY (cliente_id) REFERENCES cliente(id)
+    servico_id INT NOT NULL,
+
+    detalhes TEXT NOT NULL,          -- O que será feito detalhado
+    tempo_estimado VARCHAR(100),     -- Tempo médio de execução
+    data_criacao DATE NOT NULL,      -- Quando o orçamento foi criado
+
+    status ENUM('pendente', 'aprovado', 'cancelado')
+           DEFAULT 'pendente',
+
+    FOREIGN KEY (cliente_id) REFERENCES cliente(id),
+    FOREIGN KEY (servico_id) REFERENCES servico(id)
 );
 
 -- ===========================
