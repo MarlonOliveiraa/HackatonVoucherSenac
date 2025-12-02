@@ -45,7 +45,7 @@ CREATE TABLE orcamento (
 CREATE TABLE orcamento_itens (
     id INT AUTO_INCREMENT PRIMARY KEY,
     orcamento_id INT NOT NULL,
-    servico_id INT NOT NULL,
+    servico_id INT NOT   NULL,
     valor DECIMAL(10,2),
     FOREIGN KEY (orcamento_id) REFERENCES orcamento(id),
     FOREIGN KEY (servico_id) REFERENCES servico(id)
