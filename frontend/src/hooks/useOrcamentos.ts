@@ -8,18 +8,20 @@ const mockOrcamentos: Orcamento[] = [
   {
     id: '1',
     clienteId: '1',
-    total: 3700,
-    data: '2024-11-05',
+    servicoId: '1',
+    detalhes: 'Consultoria completa para reestruturação de marketing digital',
+    tempoEstimado: '2 semanas',
+    dataCriacao: '2024-11-05',
     status: 'aprovado',
-    createdAt: '2024-11-01',
   },
   {
     id: '2',
     clienteId: '2',
-    total: 5000,
-    data: '2024-11-25',
+    servicoId: '3',
+    detalhes: 'Desenvolvimento de e-commerce completo com integração de pagamentos',
+    tempoEstimado: '1 mês',
+    dataCriacao: '2024-11-25',
     status: 'pendente',
-    createdAt: '2024-11-20',
   },
 ];
 
@@ -62,11 +64,10 @@ export const useOrcamentos = () => {
     setItems(newItems);
   };
 
-  const addOrcamento = (orcamento: Omit<Orcamento, 'id' | 'createdAt'>, selectedItems: OrcamentoItem[]) => {
+  const addOrcamento = (orcamento: Omit<Orcamento, 'id'>, selectedItems: Omit<OrcamentoItem, 'id' | 'orcamentoId'>[]) => {
     const newOrcamento: Orcamento = {
       ...orcamento,
       id: Date.now().toString(),
-      createdAt: new Date().toISOString().split('T')[0],
     };
     
     const newItems = selectedItems.map(item => ({
@@ -92,5 +93,11 @@ export const useOrcamentos = () => {
     return items.filter(i => i.orcamentoId === orcamentoId);
   };
 
-  return { orcamentos, addOrcamento, updateOrcamento, deleteOrcamento, getOrcamentoItems };
+  const getOrcamentoTotal = (orcamentoId: string) => {
+    return items
+      .filter(i => i.orcamentoId === orcamentoId)
+      .reduce((acc, item) => acc + item.valor, 0);
+  };
+
+  return { orcamentos, items, addOrcamento, updateOrcamento, deleteOrcamento, getOrcamentoItems, getOrcamentoTotal };
 };

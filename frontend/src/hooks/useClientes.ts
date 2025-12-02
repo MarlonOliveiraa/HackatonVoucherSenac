@@ -11,7 +11,6 @@ const mockClientes: Cliente[] = [
     email: 'joao@email.com',
     observacoes: 'Cliente preferencial',
     status: 'ativo',
-    createdAt: '2024-11-15',
   },
   {
     id: '2',
@@ -19,7 +18,6 @@ const mockClientes: Cliente[] = [
     telefone: '(11) 91234-5678',
     email: 'maria@email.com',
     status: 'ativo',
-    createdAt: '2024-11-20',
   },
 ];
 
@@ -41,11 +39,10 @@ export const useClientes = () => {
     setClientes(newClientes);
   };
 
-  const addCliente = (cliente: Omit<Cliente, 'id' | 'createdAt'>) => {
+  const addCliente = (cliente: Omit<Cliente, 'id'>) => {
     const newCliente: Cliente = {
       ...cliente,
       id: Date.now().toString(),
-      createdAt: new Date().toISOString().split('T')[0],
     };
     saveClientes([...clientes, newCliente]);
   };

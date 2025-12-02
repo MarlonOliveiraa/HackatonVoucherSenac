@@ -4,28 +4,23 @@ export interface Cliente {
   telefone: string;
   email: string;
   observacoes?: string;
-  status: 'ativo' | 'inativo';
-  createdAt: string;
+  status: string;
 }
 
 export interface Servico {
   id: string;
-  clienteId: string;
   nome: string;
-  valor: number;
-  tempoEstimado: number; // em horas
-  status: 'pendente' | 'concluido' | 'cancelado';
-  data: string;
-  createdAt: string;
+  descricao?: string;
 }
 
 export interface Orcamento {
   id: string;
   clienteId: string;
-  total: number;
-  data: string;
-  status: 'aprovado' | 'pendente' | 'rejeitado';
-  createdAt: string;
+  servicoId: string;
+  detalhes: string;
+  tempoEstimado?: string;
+  dataCriacao: string;
+  status: 'pendente' | 'aprovado' | 'cancelado';
 }
 
 export interface OrcamentoItem {
@@ -35,11 +30,9 @@ export interface OrcamentoItem {
   valor: number;
 }
 
-export interface TimelineItem {
+export interface Financeiro {
   id: string;
-  tipo: 'servico' | 'orcamento';
-  data: string;
-  titulo: string;
-  valor: number;
-  status: string;
+  servicoId: string;
+  dataPagamento?: string;
+  valorPago: number;
 }

@@ -5,6 +5,7 @@ import {
   Users, 
   Briefcase, 
   FileText, 
+  DollarSign,
   LogOut,
   Menu
 } from 'lucide-react';
@@ -26,6 +27,7 @@ const navigation = [
   { name: 'Clientes', href: '/clientes', icon: Users },
   { name: 'Serviços', href: '/servicos', icon: Briefcase },
   { name: 'Orçamentos', href: '/orcamentos', icon: FileText },
+  { name: 'Financeiro', href: '/financeiro', icon: DollarSign },
 ];
 
 export const Layout = ({ children }: LayoutProps) => {

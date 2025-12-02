@@ -1,37 +1,29 @@
 import { Layout } from '@/components/Layout';
-import { useServicos } from '@/hooks/useServicos';
 import { useClientes } from '@/hooks/useClientes';
+import { useOrcamentos } from '@/hooks/useOrcamentos';
+import { useFinanceiro } from '@/hooks/useFinanceiro';
+import { useServicos } from '@/hooks/useServicos';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DollarSign, TrendingUp, Users, CheckCircle2 } from 'lucide-react';
+import { DollarSign, TrendingUp, Users, FileText, CheckCircle2, Clock, Briefcase } from 'lucide-react';
 
 const Dashboard = () => {
-  const { servicos } = useServicos();
   const { clientes } = useClientes();
+  const { orcamentos, getOrcamentoTotal } = useOrcamentos();
+  const { registros, getTotalRecebido } = useFinanceiro();
+  const { servicos } = useServicos();
 
-  // Calcular métricas
-  const servicosConcluidos = servicos.filter(s => s.status === 'concluido');
-  const faturamentoTotal = servicosConcluidos.reduce((acc, s) => acc + s.valor, 0);
   const clientesAtivos = clientes.filter(c => c.status === 'ativo').length;
+  const orcamentosAprovados = orcamentos.filter(o => o.status === 'aprovado');
+  const orcamentosPendentes = orcamentos.filter(o => o.status === 'pendente');
+  const totalRecebido = getTotalRecebido();
+  
+  const totalOrcamentosAprovados = orcamentosAprovados.reduce(
+    (acc, o) => acc + getOrcamentoTotal(o.id), 0
+  );
 
-  // Serviço mais lucrativo
-  const servicoMaisLucrativo = servicos.reduce((max, s) => 
-    s.valor > (max?.valor || 0) ? s : max
-  , servicos[0]);
-
-  // Faturamento por dia da semana (mock)
-  const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-  const faturamentoPorDia = servicosConcluidos.reduce((acc, s) => {
-    const dia = new Date(s.data).getDay();
-    acc[dia] = (acc[dia] || 0) + s.valor;
-    return acc;
-  }, {} as Record<number, number>);
-
-  const diaMaiorFaturamento = Object.entries(faturamentoPorDia)
-    .sort(([, a], [, b]) => b - a)[0];
-
-  const tempoMedio = servicosConcluidos.length > 0
-    ? servicosConcluidos.reduce((acc, s) => acc + s.tempoEstimado, 0) / servicosConcluidos.length
-    : 0;
+  const getServicoNome = (servicoId: string) => {
+    return servicos.find(s => s.id === servicoId)?.nome || 'Serviço';
+  };
 
   return (
     <Layout>
@@ -45,18 +37,18 @@ const Dashboard = () => {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card className="border-0 shadow-lg card-hover bg-gradient-to-br from-card to-card/50 backdrop-blur">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Faturamento Total</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Recebido</CardTitle>
               <div className="h-10 w-10 rounded-xl bg-accent/10 flex items-center justify-center">
                 <DollarSign className="h-5 w-5 text-accent" />
               </div>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-gradient-accent">
-                R$ {faturamentoTotal.toLocaleString('pt-BR')}
+                R$ {totalRecebido.toLocaleString('pt-BR')}
               </div>
               <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
                 <TrendingUp className="h-3 w-3" />
-                {servicosConcluidos.length} serviços concluídos
+                {registros.length} pagamentos registrados
               </p>
             </CardContent>
           </Card>
@@ -80,66 +72,59 @@ const Dashboard = () => {
 
           <Card className="border-0 shadow-lg card-hover bg-gradient-to-br from-card to-card/50 backdrop-blur">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Serviços Concluídos</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Orçamentos Aprovados</CardTitle>
               <div className="h-10 w-10 rounded-xl bg-success/10 flex items-center justify-center">
                 <CheckCircle2 className="h-5 w-5 text-success" />
               </div>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-success">
-                {servicosConcluidos.length}
+                {orcamentosAprovados.length}
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                {servicos.filter(s => s.status === 'pendente').length} pendentes
+                R$ {totalOrcamentosAprovados.toLocaleString('pt-BR')} em valor
               </p>
             </CardContent>
           </Card>
 
           <Card className="border-0 shadow-lg card-hover bg-gradient-to-br from-card to-card/50 backdrop-blur">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Ticket Médio</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Serviços Cadastrados</CardTitle>
               <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                <TrendingUp className="h-5 w-5 text-primary" />
+                <Briefcase className="h-5 w-5 text-primary" />
               </div>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">
-                R$ {servicosConcluidos.length > 0 
-                  ? Math.round(faturamentoTotal / servicosConcluidos.length).toLocaleString('pt-BR')
-                  : '0'
-                }
+                {servicos.length}
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                Por serviço
+                Catálogo de serviços
               </p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Insights de Produtividade */}
+        {/* Insights */}
         <div>
-          <h2 className="text-2xl font-display font-bold mb-4">Insights de Produtividade</h2>
+          <h2 className="text-2xl font-display font-bold mb-4">Resumo</h2>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <Card className="border-0 shadow-lg card-hover bg-gradient-to-br from-accent/5 to-accent/10">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base font-semibold flex items-center gap-2">
                   <div className="h-8 w-8 rounded-lg bg-accent/20 flex items-center justify-center">
-                    <TrendingUp className="h-4 w-4 text-accent" />
+                    <FileText className="h-4 w-4 text-accent" />
                   </div>
-                  Serviço Mais Lucrativo
+                  Orçamentos Pendentes
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {servicoMaisLucrativo ? (
-                  <>
-                    <p className="font-semibold text-lg text-foreground line-clamp-1">{servicoMaisLucrativo.nome}</p>
-                    <p className="text-3xl font-bold text-accent mt-3">
-                      R$ {servicoMaisLucrativo.valor.toLocaleString('pt-BR')}
-                    </p>
-                  </>
-                ) : (
-                  <p className="text-muted-foreground">Nenhum serviço cadastrado</p>
-                )}
+                <p className="text-3xl font-bold text-accent">
+                  {orcamentosPendentes.length}
+                </p>
+                <p className="text-sm text-muted-foreground mt-3">
+                  Aguardando aprovação
+                </p>
               </CardContent>
             </Card>
 
@@ -147,24 +132,21 @@ const Dashboard = () => {
               <CardHeader className="pb-3">
                 <CardTitle className="text-base font-semibold flex items-center gap-2">
                   <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center">
-                    <DollarSign className="h-4 w-4 text-primary" />
+                    <TrendingUp className="h-4 w-4 text-primary" />
                   </div>
-                  Dia com Maior Faturamento
+                  Ticket Médio
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {diaMaiorFaturamento ? (
-                  <>
-                    <p className="font-semibold text-lg text-foreground">
-                      {diasSemana[parseInt(diaMaiorFaturamento[0])]}
-                    </p>
-                    <p className="text-3xl font-bold text-primary mt-3">
-                      R$ {Math.round(diaMaiorFaturamento[1]).toLocaleString('pt-BR')}
-                    </p>
-                  </>
-                ) : (
-                  <p className="text-muted-foreground">Sem dados</p>
-                )}
+                <p className="text-3xl font-bold text-primary">
+                  R$ {registros.length > 0 
+                    ? Math.round(totalRecebido / registros.length).toLocaleString('pt-BR')
+                    : '0'
+                  }
+                </p>
+                <p className="text-sm text-muted-foreground mt-3">
+                  Por pagamento
+                </p>
               </CardContent>
             </Card>
 
@@ -172,17 +154,17 @@ const Dashboard = () => {
               <CardHeader className="pb-3">
                 <CardTitle className="text-base font-semibold flex items-center gap-2">
                   <div className="h-8 w-8 rounded-lg bg-success/20 flex items-center justify-center">
-                    <CheckCircle2 className="h-4 w-4 text-success" />
+                    <Clock className="h-4 w-4 text-success" />
                   </div>
-                  Tempo Médio por Serviço
+                  Total Orçamentos
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-3xl font-bold text-success">
-                  {tempoMedio.toFixed(1)}h
+                  {orcamentos.length}
                 </p>
                 <p className="text-sm text-muted-foreground mt-3">
-                  Baseado em {servicosConcluidos.length} serviços
+                  {orcamentosAprovados.length} aprovados, {orcamentosPendentes.length} pendentes
                 </p>
               </CardContent>
             </Card>

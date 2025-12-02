@@ -6,65 +6,58 @@ import { useServicos } from '@/hooks/useServicos';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Edit, Trash2, FileText } from 'lucide-react';
+import { Plus, Trash2, FileText, Check, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Orcamentos = () => {
-  const { orcamentos, addOrcamento, updateOrcamento, deleteOrcamento, getOrcamentoItems } = useOrcamentos();
+  const { orcamentos, addOrcamento, updateOrcamento, deleteOrcamento, getOrcamentoItems, getOrcamentoTotal } = useOrcamentos();
   const { clientes } = useClientes();
   const { servicos } = useServicos();
   const [open, setOpen] = useState(false);
-  const [selectedOrcamento, setSelectedOrcamento] = useState<string | null>(null);
-  const [selectedServicos, setSelectedServicos] = useState<string[]>([]);
+  const [selectedServicosItems, setSelectedServicosItems] = useState<{servicoId: string, valor: string}[]>([]);
   const [formData, setFormData] = useState({
     clienteId: '',
-    status: 'pendente' as 'aprovado' | 'pendente' | 'rejeitado',
-    data: new Date().toISOString().split('T')[0],
+    servicoId: '',
+    detalhes: '',
+    tempoEstimado: '',
+    status: 'pendente' as 'aprovado' | 'pendente' | 'cancelado',
+    dataCriacao: new Date().toISOString().split('T')[0],
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (selectedServicos.length === 0) {
-      toast.error('Selecione pelo menos um serviço');
+    if (selectedServicosItems.length === 0) {
+      toast.error('Adicione pelo menos um item ao orçamento');
       return;
     }
 
-    const servicosData = selectedServicos.map(servicoId => {
-      const servico = servicos.find(s => s.id === servicoId);
-      return {
-        id: '',
-        orcamentoId: '',
-        servicoId,
-        valor: servico?.valor || 0,
-      };
-    });
+    const items = selectedServicosItems.map(item => ({
+      servicoId: item.servicoId,
+      valor: parseFloat(item.valor) || 0,
+    }));
 
-    const total = servicosData.reduce((acc, s) => acc + s.valor, 0);
-
-    if (selectedOrcamento) {
-      updateOrcamento(selectedOrcamento, { ...formData, total });
-      toast.success('Orçamento atualizado!');
-    } else {
-      addOrcamento({ ...formData, total }, servicosData);
-      toast.success('Orçamento criado!');
-    }
+    addOrcamento(formData, items);
+    toast.success('Orçamento criado!');
     resetForm();
   };
 
   const resetForm = () => {
     setFormData({
       clienteId: '',
+      servicoId: '',
+      detalhes: '',
+      tempoEstimado: '',
       status: 'pendente',
-      data: new Date().toISOString().split('T')[0],
+      dataCriacao: new Date().toISOString().split('T')[0],
     });
-    setSelectedServicos([]);
-    setSelectedOrcamento(null);
+    setSelectedServicosItems([]);
     setOpen(false);
   };
 
@@ -83,23 +76,22 @@ const Orcamentos = () => {
     return servicos.find(s => s.id === servicoId)?.nome || 'Serviço não encontrado';
   };
 
-  const getClienteServicos = (clienteId: string) => {
-    return servicos.filter(s => s.clienteId === clienteId);
+  const addServicoItem = () => {
+    setSelectedServicosItems([...selectedServicosItems, { servicoId: '', valor: '' }]);
   };
 
-  const toggleServico = (servicoId: string) => {
-    setSelectedServicos(prev =>
-      prev.includes(servicoId)
-        ? prev.filter(id => id !== servicoId)
-        : [...prev, servicoId]
-    );
+  const updateServicoItem = (index: number, field: 'servicoId' | 'valor', value: string) => {
+    const updated = [...selectedServicosItems];
+    updated[index][field] = value;
+    setSelectedServicosItems(updated);
+  };
+
+  const removeServicoItem = (index: number) => {
+    setSelectedServicosItems(selectedServicosItems.filter((_, i) => i !== index));
   };
 
   const calculateTotal = () => {
-    return selectedServicos.reduce((acc, servicoId) => {
-      const servico = servicos.find(s => s.id === servicoId);
-      return acc + (servico?.valor || 0);
-    }, 0);
+    return selectedServicosItems.reduce((acc, item) => acc + (parseFloat(item.valor) || 0), 0);
   };
 
   return (
@@ -117,91 +109,153 @@ const Orcamentos = () => {
                 Novo Orçamento
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>
-                  {selectedOrcamento ? 'Editar Orçamento' : 'Novo Orçamento'}
-                </DialogTitle>
+                <DialogTitle>Novo Orçamento</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="clienteId">Cliente</Label>
-                  <Select
-                    value={formData.clienteId}
-                    onValueChange={(value) => {
-                      setFormData({ ...formData, clienteId: value });
-                      setSelectedServicos([]);
-                    }}
-                    required
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um cliente" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {clientes.map((cliente) => (
-                        <SelectItem key={cliente.id} value={cliente.id}>
-                          {cliente.nome}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {formData.clienteId && (
-                  <div className="space-y-2">
-                    <Label>Serviços</Label>
-                    <div className="border rounded-lg p-4 space-y-2 max-h-48 overflow-y-auto">
-                      {getClienteServicos(formData.clienteId).map((servico) => (
-                        <div key={servico.id} className="flex items-center justify-between p-2 hover:bg-accent rounded">
-                          <div className="flex items-center gap-3">
-                            <Checkbox
-                              checked={selectedServicos.includes(servico.id)}
-                              onCheckedChange={() => toggleServico(servico.id)}
-                            />
-                            <div>
-                              <p className="font-medium">{servico.nome}</p>
-                              <p className="text-sm text-muted-foreground">
-                                R$ {servico.valor.toLocaleString('pt-BR')}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="data">Data</Label>
-                    <Input
-                      id="data"
-                      type="date"
-                      value={formData.data}
-                      onChange={(e) => setFormData({ ...formData, data: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="status">Status</Label>
+                    <Label htmlFor="clienteId">Cliente</Label>
                     <Select
-                      value={formData.status}
-                      onValueChange={(value: any) => setFormData({ ...formData, status: value })}
+                      value={formData.clienteId}
+                      onValueChange={(value) => setFormData({ ...formData, clienteId: value })}
+                      required
                     >
                       <SelectTrigger>
-                        <SelectValue />
+                        <SelectValue placeholder="Selecione um cliente" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="pendente">Pendente</SelectItem>
-                        <SelectItem value="aprovado">Aprovado</SelectItem>
-                        <SelectItem value="rejeitado">Rejeitado</SelectItem>
+                        {clientes.map((cliente) => (
+                          <SelectItem key={cliente.id} value={cliente.id}>
+                            {cliente.nome}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="servicoId">Serviço Principal</Label>
+                    <Select
+                      value={formData.servicoId}
+                      onValueChange={(value) => setFormData({ ...formData, servicoId: value })}
+                      required
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione um serviço" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {servicos.map((servico) => (
+                          <SelectItem key={servico.id} value={servico.id}>
+                            {servico.nome}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
 
-                {selectedServicos.length > 0 && (
-                  <div className="bg-accent/50 rounded-lg p-4">
+                <div className="space-y-2">
+                  <Label htmlFor="detalhes">Detalhes do Orçamento</Label>
+                  <Textarea
+                    id="detalhes"
+                    value={formData.detalhes}
+                    onChange={(e) => setFormData({ ...formData, detalhes: e.target.value })}
+                    placeholder="Descreva o que será feito..."
+                    rows={3}
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="tempoEstimado">Tempo Estimado</Label>
+                    <Input
+                      id="tempoEstimado"
+                      value={formData.tempoEstimado}
+                      onChange={(e) => setFormData({ ...formData, tempoEstimado: e.target.value })}
+                      placeholder="Ex: 2 semanas"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="dataCriacao">Data</Label>
+                    <Input
+                      id="dataCriacao"
+                      type="date"
+                      value={formData.dataCriacao}
+                      onChange={(e) => setFormData({ ...formData, dataCriacao: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="status">Status</Label>
+                  <Select
+                    value={formData.status}
+                    onValueChange={(value: any) => setFormData({ ...formData, status: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pendente">Pendente</SelectItem>
+                      <SelectItem value="aprovado">Aprovado</SelectItem>
+                      <SelectItem value="cancelado">Cancelado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Itens do Orçamento */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label>Itens do Orçamento</Label>
+                    <Button type="button" variant="outline" size="sm" onClick={addServicoItem}>
+                      <Plus className="h-4 w-4 mr-1" />
+                      Adicionar Item
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    {selectedServicosItems.map((item, index) => (
+                      <div key={index} className="flex gap-2 items-center">
+                        <Select
+                          value={item.servicoId}
+                          onValueChange={(value) => updateServicoItem(index, 'servicoId', value)}
+                        >
+                          <SelectTrigger className="flex-1">
+                            <SelectValue placeholder="Serviço" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {servicos.map((servico) => (
+                              <SelectItem key={servico.id} value={servico.id}>
+                                {servico.nome}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="Valor"
+                          value={item.valor}
+                          onChange={(e) => updateServicoItem(index, 'valor', e.target.value)}
+                          className="w-32"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeServicoItem(index)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {selectedServicosItems.length > 0 && (
+                  <div className="bg-accent/10 rounded-lg p-4">
                     <div className="flex justify-between items-center">
                       <span className="font-medium">Total</span>
                       <span className="text-2xl font-bold text-accent">
@@ -212,7 +266,7 @@ const Orcamentos = () => {
                 )}
 
                 <Button type="submit" className="w-full">
-                  {selectedOrcamento ? 'Atualizar' : 'Criar Orçamento'}
+                  Criar Orçamento
                 </Button>
               </form>
             </DialogContent>
@@ -222,6 +276,7 @@ const Orcamentos = () => {
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {orcamentos.map((orcamento) => {
             const items = getOrcamentoItems(orcamento.id);
+            const total = getOrcamentoTotal(orcamento.id);
             return (
               <Card key={orcamento.id} className="card-hover border-0 shadow-lg overflow-hidden group bg-gradient-to-br from-card to-card/50">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-success opacity-5 rounded-full -mr-16 -mt-16 group-hover:opacity-10 transition-opacity" />
@@ -233,7 +288,7 @@ const Orcamentos = () => {
                       </div>
                       <div>
                         <CardTitle className="text-lg font-bold">
-                          Orçamento #{orcamento.id.slice(0, 6)}
+                          {getServicoNome(orcamento.servicoId)}
                         </CardTitle>
                         <CardDescription className="mt-1 font-medium">
                           {getClienteNome(orcamento.clienteId)}
@@ -249,44 +304,64 @@ const Orcamentos = () => {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4 relative">
+                  <p className="text-sm text-muted-foreground line-clamp-2">
+                    {orcamento.detalhes}
+                  </p>
                   <div className="bg-gradient-accent rounded-xl p-4 shadow-md">
                     <div className="text-xs text-white/80 font-medium mb-1">Valor Total</div>
                     <div className="text-3xl font-bold text-white">
-                      R$ {orcamento.total.toLocaleString('pt-BR')}
+                      R$ {total.toLocaleString('pt-BR')}
                     </div>
                   </div>
-                  <div className="bg-muted/50 rounded-lg px-3 py-2">
-                    <div className="text-xs text-muted-foreground font-medium mb-1">Data</div>
-                    <div className="text-sm font-semibold text-foreground">
-                      {new Date(orcamento.data).toLocaleDateString('pt-BR')}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="bg-muted/50 rounded-lg px-3 py-2">
+                      <div className="text-xs text-muted-foreground font-medium mb-1">Data</div>
+                      <div className="text-sm font-semibold text-foreground">
+                        {new Date(orcamento.dataCriacao).toLocaleDateString('pt-BR')}
+                      </div>
                     </div>
+                    {orcamento.tempoEstimado && (
+                      <div className="bg-muted/50 rounded-lg px-3 py-2">
+                        <div className="text-xs text-muted-foreground font-medium mb-1">Tempo</div>
+                        <div className="text-sm font-semibold text-foreground">
+                          {orcamento.tempoEstimado}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <div className="border-t pt-3">
-                    <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Serviços inclusos</p>
-                    <ul className="text-sm space-y-1.5">
-                      {items.map((item) => (
-                        <li key={item.id} className="flex items-center gap-2 text-foreground">
-                          <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                          {getServicoNome(item.servicoId)}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                  {items.length > 0 && (
+                    <div className="border-t pt-3">
+                      <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Itens</p>
+                      <ul className="text-sm space-y-1.5">
+                        {items.map((item) => (
+                          <li key={item.id} className="flex items-center justify-between text-foreground">
+                            <span className="flex items-center gap-2">
+                              <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                              {getServicoNome(item.servicoId)}
+                            </span>
+                            <span className="text-muted-foreground">
+                              R$ {item.valor.toLocaleString('pt-BR')}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                   <div className="flex gap-2 pt-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="flex-1 hover:bg-success hover:text-success-foreground hover:border-success transition-colors"
-                      onClick={() => {
-                        updateOrcamento(orcamento.id, {
-                          status: orcamento.status === 'pendente' ? 'aprovado' : 'pendente'
-                        });
-                        toast.success('Status atualizado!');
-                      }}
-                    >
-                      <Edit className="h-4 w-4 mr-2" />
-                      Aprovar
-                    </Button>
+                    {orcamento.status === 'pendente' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 hover:bg-success hover:text-success-foreground hover:border-success transition-colors"
+                        onClick={() => {
+                          updateOrcamento(orcamento.id, { status: 'aprovado' });
+                          toast.success('Orçamento aprovado!');
+                        }}
+                      >
+                        <Check className="h-4 w-4 mr-2" />
+                        Aprovar
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       variant="outline"

@@ -6,33 +6,18 @@ const STORAGE_KEY = 'servicos';
 const mockServicos: Servico[] = [
   {
     id: '1',
-    clienteId: '1',
     nome: 'Consultoria de Marketing',
-    valor: 2500,
-    tempoEstimado: 8,
-    status: 'concluido',
-    data: '2024-11-10',
-    createdAt: '2024-11-01',
+    descricao: 'Análise completa de estratégia de marketing digital',
   },
   {
     id: '2',
-    clienteId: '1',
     nome: 'Design de Logo',
-    valor: 1200,
-    tempoEstimado: 4,
-    status: 'concluido',
-    data: '2024-11-18',
-    createdAt: '2024-11-15',
+    descricao: 'Criação de identidade visual completa',
   },
   {
     id: '3',
-    clienteId: '2',
     nome: 'Desenvolvimento Web',
-    valor: 5000,
-    tempoEstimado: 40,
-    status: 'pendente',
-    data: '2024-12-05',
-    createdAt: '2024-11-20',
+    descricao: 'Desenvolvimento de sites e aplicações web',
   },
 ];
 
@@ -54,11 +39,10 @@ export const useServicos = () => {
     setServicos(newServicos);
   };
 
-  const addServico = (servico: Omit<Servico, 'id' | 'createdAt'>) => {
+  const addServico = (servico: Omit<Servico, 'id'>) => {
     const newServico: Servico = {
       ...servico,
       id: Date.now().toString(),
-      createdAt: new Date().toISOString().split('T')[0],
     };
     saveServicos([...servicos, newServico]);
   };

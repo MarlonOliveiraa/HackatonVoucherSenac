@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Layout } from '@/components/Layout';
 import { useClientes } from '@/hooks/useClientes';
+import { useOrcamentos } from '@/hooks/useOrcamentos';
 import { useServicos } from '@/hooks/useServicos';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +16,7 @@ import { toast } from 'sonner';
 
 const Clientes = () => {
   const { clientes, addCliente, updateCliente, deleteCliente } = useClientes();
+  const { orcamentos, getOrcamentoTotal } = useOrcamentos();
   const { servicos } = useServicos();
   const [open, setOpen] = useState(false);
   const [timelineOpen, setTimelineOpen] = useState(false);
@@ -24,7 +26,7 @@ const Clientes = () => {
     telefone: '',
     email: '',
     observacoes: '',
-    status: 'ativo' as 'ativo' | 'inativo',
+    status: 'ativo',
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -58,10 +60,14 @@ const Clientes = () => {
     }
   };
 
-  const getClienteTimeline = (clienteId: string) => {
-    return servicos
-      .filter(s => s.clienteId === clienteId)
-      .sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
+  const getClienteOrcamentos = (clienteId: string) => {
+    return orcamentos
+      .filter(o => o.clienteId === clienteId)
+      .sort((a, b) => new Date(b.dataCriacao).getTime() - new Date(a.dataCriacao).getTime());
+  };
+
+  const getServicoNome = (servicoId: string) => {
+    return servicos.find(s => s.id === servicoId)?.nome || 'Serviço não encontrado';
   };
 
   return (
@@ -101,7 +107,6 @@ const Clientes = () => {
                     id="telefone"
                     value={formData.telefone}
                     onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
-                    required
                   />
                 </div>
                 <div className="space-y-2">
@@ -111,16 +116,13 @@ const Clientes = () => {
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    required
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="status">Status</Label>
                   <Select
                     value={formData.status}
-                    onValueChange={(value: 'ativo' | 'inativo') => 
-                      setFormData({ ...formData, status: value })
-                    }
+                    onValueChange={(value) => setFormData({ ...formData, status: value })}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -163,7 +165,7 @@ const Clientes = () => {
                       <CardTitle className="text-xl">{cliente.nome}</CardTitle>
                       <CardDescription className="mt-1 flex items-center gap-1">
                         <Mail className="h-3 w-3" />
-                        {cliente.email}
+                        {cliente.email || 'Sem email'}
                       </CardDescription>
                     </div>
                   </div>
@@ -176,10 +178,12 @@ const Clientes = () => {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4 relative">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
-                  <Phone className="h-4 w-4 text-primary" />
-                  {cliente.telefone}
-                </div>
+                {cliente.telefone && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
+                    <Phone className="h-4 w-4 text-primary" />
+                    {cliente.telefone}
+                  </div>
+                )}
                 {cliente.observacoes && (
                   <p className="text-sm text-muted-foreground line-clamp-2 italic border-l-2 border-primary/20 pl-3">
                     {cliente.observacoes}
@@ -196,7 +200,7 @@ const Clientes = () => {
                     }}
                   >
                     <Clock className="h-4 w-4 mr-2" />
-                    Timeline
+                    Orçamentos
                   </Button>
                   <Button
                     size="sm"
@@ -224,33 +228,36 @@ const Clientes = () => {
         <Dialog open={timelineOpen} onOpenChange={setTimelineOpen}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Timeline do Cliente</DialogTitle>
+              <DialogTitle>Orçamentos do Cliente</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 max-h-96 overflow-y-auto">
-              {selectedCliente && getClienteTimeline(selectedCliente).map((servico) => (
-                <div key={servico.id} className="flex gap-4 border-l-2 border-primary pl-4 pb-4">
+              {selectedCliente && getClienteOrcamentos(selectedCliente).map((orcamento) => (
+                <div key={orcamento.id} className="flex gap-4 border-l-2 border-primary pl-4 pb-4">
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-semibold">{servico.nome}</h4>
+                      <h4 className="font-semibold">{getServicoNome(orcamento.servicoId)}</h4>
                       <Badge variant={
-                        servico.status === 'concluido' ? 'default' :
-                        servico.status === 'pendente' ? 'secondary' : 'outline'
+                        orcamento.status === 'aprovado' ? 'default' :
+                        orcamento.status === 'pendente' ? 'secondary' : 'outline'
                       }>
-                        {servico.status}
+                        {orcamento.status}
                       </Badge>
                     </div>
+                    <p className="text-sm text-muted-foreground mb-1 line-clamp-2">
+                      {orcamento.detalhes}
+                    </p>
                     <p className="text-sm text-muted-foreground mb-1">
-                      Data: {new Date(servico.data).toLocaleDateString('pt-BR')}
+                      Data: {new Date(orcamento.dataCriacao).toLocaleDateString('pt-BR')}
                     </p>
                     <p className="text-sm font-semibold text-accent">
-                      R$ {servico.valor.toLocaleString('pt-BR')}
+                      R$ {getOrcamentoTotal(orcamento.id).toLocaleString('pt-BR')}
                     </p>
                   </div>
                 </div>
               ))}
-              {selectedCliente && getClienteTimeline(selectedCliente).length === 0 && (
+              {selectedCliente && getClienteOrcamentos(selectedCliente).length === 0 && (
                 <p className="text-center text-muted-foreground py-8">
-                  Nenhum serviço encontrado
+                  Nenhum orçamento encontrado
                 </p>
               )}
             </div>
