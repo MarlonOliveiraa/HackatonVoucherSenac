@@ -12,20 +12,6 @@ class Servico{
         $this->conn = $db;
     }
 
-    public function listar(){
-        $query = "SELECT * FROM " . $this->table . " ORDER BY data DESC";
-        $stmt = $this->conn->prepare($query);
-        $stmt->execute();
-        return $stmt;
-    }
-
-    public function listar() {
-        $query = "SELECT * FROM " . $this->table . " ORDER BY data DESC";
-        $stmt = $this->conn->prepare($query);
-        $stmt->execute();
-        return $stmt;
-    }
-
     public function criar() {
         $query = "INSERT INTO " . $this->table . " 
         SET nome=:nome, descricao=:descricao";
