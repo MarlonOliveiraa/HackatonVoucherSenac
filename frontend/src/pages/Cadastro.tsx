@@ -6,24 +6,36 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { LogIn } from 'lucide-react';
+import { UserPlus } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
-const Login = () => {
+const Cadastro = () => {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { login } = useAuth();
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const { register } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const result = login(email, password);
+    if (password !== confirmPassword) {
+      toast.error('As senhas não coincidem');
+      return;
+    }
+
+    if (password.length < 4) {
+      toast.error('A senha deve ter pelo menos 4 caracteres');
+      return;
+    }
+
+    const result = register(name, email, password);
     if (result.success) {
-      toast.success('Login realizado com sucesso!');
+      toast.success('Conta criada com sucesso!');
       navigate('/dashboard');
     } else {
-      toast.error(result.error || 'Credenciais inválidas');
+      toast.error(result.error || 'Erro ao criar conta');
     }
   };
 
@@ -34,19 +46,31 @@ const Login = () => {
       </div>
       <Card className="w-full max-w-md shadow-2xl border-0 overflow-hidden relative">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-accent/10 opacity-50" />
-        <CardHeader className="space-y-1 text-center relative pb-8">
+        <CardHeader className="space-y-1 text-center relative pb-6">
           <div className="flex justify-center mb-6">
             <div className="h-16 w-16 rounded-2xl bg-gradient-primary flex items-center justify-center shadow-glow animate-scale-in">
-              <LogIn className="h-8 w-8 text-white" />
+              <UserPlus className="h-8 w-8 text-white" />
             </div>
           </div>
-          <CardTitle className="text-3xl font-display font-bold text-gradient-primary">FlowManager</CardTitle>
+          <CardTitle className="text-3xl font-display font-bold text-gradient-primary">Criar Conta</CardTitle>
           <CardDescription className="text-base">
-            Entre com suas credenciais para acessar o sistema
+            Preencha os dados abaixo para se cadastrar
           </CardDescription>
         </CardHeader>
         <CardContent className="relative">
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name" className="text-sm font-semibold">Nome completo</Label>
+              <Input
+                id="name"
+                type="text"
+                placeholder="Seu nome"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="h-11"
+                required
+              />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="email" className="text-sm font-semibold">Email</Label>
               <Input
@@ -71,20 +95,27 @@ const Login = () => {
                 required
               />
             </div>
-            <Button type="submit" className="w-full h-11 text-base font-semibold shadow-lg hover:shadow-glow transition-all">
-              Entrar
-            </Button>
-            <div className="text-center space-y-3">
-              <p className="text-sm text-muted-foreground">
-                Não tem uma conta?{' '}
-                <Link to="/cadastro" className="text-primary font-semibold hover:underline">
-                  Cadastre-se
-                </Link>
-              </p>
-              <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-3">
-                💡 Ou use qualquer email e senha: <strong className="text-primary">demo</strong>
-              </p>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword" className="text-sm font-semibold">Confirmar senha</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                placeholder="••••••"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="h-11"
+                required
+              />
             </div>
+            <Button type="submit" className="w-full h-11 text-base font-semibold shadow-lg hover:shadow-glow transition-all">
+              Cadastrar
+            </Button>
+            <p className="text-sm text-center text-muted-foreground">
+              Já tem uma conta?{' '}
+              <Link to="/login" className="text-primary font-semibold hover:underline">
+                Faça login
+              </Link>
+            </p>
           </form>
         </CardContent>
       </Card>
@@ -92,4 +123,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default Cadastro;
