@@ -6,6 +6,25 @@ import { useServicos } from '@/hooks/useServicos';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DollarSign, TrendingUp, Users, FileText, CheckCircle2, Clock, Briefcase } from 'lucide-react';
 
+// async function carregarUsuarios() {
+//     try {
+//         const resposta = await fetch("http://localhost/hackatonvouchersenac/backend");
+
+//         if (!resposta.ok) {
+//             throw new Error("Erro ao buscar usuários");
+//         }
+
+//         const dados = await resposta.json();
+//         console.log("Dados recebidos:", dados);
+
+//     } catch (erro) {
+//         console.error("Erro na requisição:", erro);
+//     }
+// }
+
+// carregarUsuarios();
+
+
 const Dashboard = () => {
   const { clientes } = useClientes();
   const { orcamentos, getOrcamentoTotal } = useOrcamentos();
