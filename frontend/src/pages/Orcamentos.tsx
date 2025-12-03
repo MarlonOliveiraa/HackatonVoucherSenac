@@ -14,13 +14,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Trash2, FileText, Check, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { OrcamentoItem } from '@/types';
 
 const Orcamentos = () => {
   const { orcamentos, addOrcamento, updateOrcamento, deleteOrcamento, getOrcamentoItems, getOrcamentoTotal } = useOrcamentos();
   const { clientes } = useClientes();
   const { servicos } = useServicos();
   const [open, setOpen] = useState(false);
-  const [selectedServicosItems, setSelectedServicosItems] = useState<{servicoId: string, valor: string}[]>([]);
+  const [selectedServicosItems, setSelectedServicosItems] = useState<{nomeItem: string, valor: string}[]>([]);
   const [formData, setFormData] = useState({
     clienteId: '',
     servicoId: '',
@@ -38,8 +39,10 @@ const Orcamentos = () => {
       return;
     }
 
-    const items = selectedServicosItems.map(item => ({
-      servicoId: item.servicoId,
+    const items: OrcamentoItem[] = selectedServicosItems.map(item => ({
+      id: crypto.randomUUID(),
+      orcamentoId: '',
+      nomeItem: item.nomeItem,
       valor: parseFloat(item.valor) || 0,
     }));
 
@@ -77,10 +80,10 @@ const Orcamentos = () => {
   };
 
   const addServicoItem = () => {
-    setSelectedServicosItems([...selectedServicosItems, { servicoId: '', valor: '' }]);
+    setSelectedServicosItems([...selectedServicosItems, { nomeItem: '', valor: '' }]);
   };
 
-  const updateServicoItem = (index: number, field: 'servicoId' | 'valor', value: string) => {
+  const updateServicoItem = (index: number, field: 'nomeItem' | 'valor', value: string) => {
     const updated = [...selectedServicosItems];
     updated[index][field] = value;
     setSelectedServicosItems(updated);
@@ -218,7 +221,7 @@ const Orcamentos = () => {
                   <div className="space-y-2">
                     {selectedServicosItems.map((item, index) => (
                       <div key={index} className="flex gap-2 items-center">
-                        <Select
+                        {/* <Select
                           value={item.servicoId}
                           onValueChange={(value) => updateServicoItem(index, 'servicoId', value)}
                         >
@@ -232,7 +235,17 @@ const Orcamentos = () => {
                               </SelectItem>
                             ))}
                           </SelectContent>
-                        </Select>
+                        </Select> */}
+
+                        {/*Campo de texto livre*/}
+                        <Input
+                          type='text'
+                          placeholder='Descrição do Item'
+                          value={item.nomeItem}
+                          onChange={(e) => updateServicoItem(index, 'nomeItem', e.target.value)}
+                          className='flex-1'
+                        />
+                        {/* Valor */}
                         <Input
                           type="number"
                           step="0.01"
@@ -288,7 +301,7 @@ const Orcamentos = () => {
                       </div>
                       <div>
                         <CardTitle className="text-lg font-bold">
-                          {getServicoNome(orcamento.servicoId)}
+                          {items[0]?.nomeItem || "Sem itens"}
                         </CardTitle>
                         <CardDescription className="mt-1 font-medium">
                           {getClienteNome(orcamento.clienteId)}
@@ -337,7 +350,7 @@ const Orcamentos = () => {
                           <li key={item.id} className="flex items-center justify-between text-foreground">
                             <span className="flex items-center gap-2">
                               <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                              {getServicoNome(item.servicoId)}
+                              {item.nomeItem}
                             </span>
                             <span className="text-muted-foreground">
                               R$ {item.valor.toLocaleString('pt-BR')}
