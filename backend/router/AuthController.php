@@ -1,6 +1,8 @@
 <?php
-header("Content-Type: application/json");
+ob_clean();
 header("Access-Control-Allow-Origin: *");
+header("Content-Type: application/json");
+header("Access-Control-Allow-Methods: GET, POST");
 header("Access-Control-Allow-Headers: Content-Type");
 
 $rota = $_GET["rota"] ?? "";
