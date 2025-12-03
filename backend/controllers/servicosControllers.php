@@ -14,6 +14,12 @@ $method = $_SERVER["REQUEST_METHOD"];
 
 switch ($method) {
 
+// LISTAR
+    case "GET":
+        $result = $servico->listar();
+        echo json_encode($result);
+    break;
+
     // CRIAR
     case "POST":
         $data = json_decode(file_get_contents("php://input"));

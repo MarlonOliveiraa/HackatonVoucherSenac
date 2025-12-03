@@ -12,6 +12,13 @@ class Servico{
         $this->conn = $db;
     }
 
+    public function listar() {
+        $query = "SELECT * FROM " . $this->table;
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     public function criar() {
         $query = "INSERT INTO " . $this->table . " 
         SET nome=:nome, descricao=:descricao";

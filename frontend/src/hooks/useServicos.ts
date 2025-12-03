@@ -1,49 +1,42 @@
 import { useEffect, useState } from "react";
-import { Servico } from "@/types";
 
-const API_URL = "http://localhost/hackatonvouchersenac/backend/controllers/servicosControllers.php";
+const URL = "http://localhost/seu_projeto/controllers/servicosController.php";
 
 export const useServicos = () => {
-  const [servicos, setServicos] = useState<Servico[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [servicos, setServicos] = useState([]);
 
-  // GET – listar
+  // GET
   const fetchServicos = async () => {
-    try {
-      const res = await fetch(API_URL);
-      const data = await res.json();
-      setServicos(data);
-    } catch (err) {
-      console.error("Erro ao carregar serviços:", err);
-    } finally {
-      setLoading(false);
-    }
+    const res = await fetch(URL);
+    const data = await res.json();
+    setServicos(data);
   };
 
-  // POST – criar
-  const addServico = async (servico: Omit<Servico, "id">) => {
-    await fetch(API_URL, {
+  // POST (criar)
+  const addServico = async (dados) => {
+    await fetch(URL, {
       method: "POST",
-      body: JSON.stringify(servico),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(dados),
     });
+
     fetchServicos();
   };
 
-  // PUT – editar
-  const updateServico = async (id: string, updates: Partial<Servico>) => {
-    await fetch(`${API_URL}?id=${id}`, {
+  // PUT (editar)
+  const updateServico = async (id, dados) => {
+    await fetch(`${URL}?id=${id}`, {
       method: "PUT",
-      body: JSON.stringify({
-        id,
-        ...updates,
-      }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(dados),
     });
+
     fetchServicos();
   };
 
-  // DELETE – apagar
-  const deleteServico = async (id: string) => {
-    await fetch(`${API_URL}?id=${id}`, {
+  // DELETE
+  const deleteServico = async (id) => {
+    await fetch(`${URL}?id=${id}`, {
       method: "DELETE",
     });
     fetchServicos();
@@ -53,5 +46,10 @@ export const useServicos = () => {
     fetchServicos();
   }, []);
 
-  return { servicos, loading, addServico, updateServico, deleteServico };
+  return {
+    servicos,
+    addServico,
+    updateServico,
+    deleteServico,
+  };
 };
