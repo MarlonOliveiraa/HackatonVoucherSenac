@@ -18,16 +18,16 @@ VALUES
 (3, 4, 'Instalação de iluminação LED na sala com fita decorativa.', '5 horas', '2025-01-10', 'aprovado'),
 (1, 3, 'Troca de 8 tomadas e 3 interruptores queimados.', '4 horas', '2025-01-08', 'cancelado');
 
-INSERT INTO orcamento_itens (orcamento_id, servico_id, valor) VALUES
-(1, 1, 850.00), 
-(1, 3, 120.00), 
+INSERT INTO orcamento_itens (orcamento_id, nomeItem, valor) VALUES
+(1, 'Mão de obra: Instalação Split 12.000 BTUs', 850.00), 
+(1, 'Material de instalação (tubulação, cabos, suporte)', 120.00), 
 
-(2, 2, 1500.00),
-(2, 3, 300.00), 
+(2, 'Mão de obra: Revisão completa e diagnóstico', 1500.00),
+(2, 'Substituição de Disjuntores e Carga (5 unidades)', 300.00), 
 
-(3, 4, 700.00), 
+(3, 'Mão de obra: Instalação Luminárias e Fita LED (5h)', 700.00), 
 
-(4, 3, 400.00); 
+(4, 'Mão de obra: Troca de Tomadas e Interruptores (8+3)', 400.00);
 
 INSERT INTO financeiro (servico_id, data_pagamento, valor_pago) VALUES
 (1, '2025-01-13', 850.00),  
