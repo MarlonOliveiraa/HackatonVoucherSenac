@@ -32,7 +32,7 @@ CREATE TABLE orcamento (
     tempo_estimado VARCHAR(100),     -- Tempo médio de execução
     data_criacao DATE NOT NULL,      -- Quando o orçamento foi criado
 
-    status ENUM('pendente', 'aprovado', 'cancelado')
+    status_orcamento ENUM('pendente', 'aprovado', 'cancelado')
            DEFAULT 'pendente',
 
     FOREIGN KEY (cliente_id) REFERENCES cliente(id),
