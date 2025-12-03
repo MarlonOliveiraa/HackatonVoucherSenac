@@ -15,17 +15,19 @@ const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    const result = login(email, password);
-    if (result.success) {
-      toast.success('Login realizado com sucesso!');
-      navigate('/dashboard');
+
+    const result = await login(email, password);
+
+    if (result.status) {
+      toast.success("Login realizado com sucesso!");
+      navigate("/Dashboard");
     } else {
-      toast.error(result.error || 'Credenciais inválidas');
+      toast.error(result.mensagem || "Credenciais inválidas");
     }
   };
+
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/5 p-4 animate-fade-in">
@@ -40,7 +42,9 @@ const Login = () => {
               <LogIn className="h-8 w-8 text-white" />
             </div>
           </div>
-          <CardTitle className="text-3xl font-display font-bold text-gradient-primary">FlowManager</CardTitle>
+          <CardTitle className="text-3xl font-display font-bold text-gradient-primary">
+            FlowManager
+          </CardTitle>
           <CardDescription className="text-base">
             Entre com suas credenciais para acessar o sistema
           </CardDescription>
@@ -71,9 +75,13 @@ const Login = () => {
                 required
               />
             </div>
-            <Button type="submit" className="w-full h-11 text-base font-semibold shadow-lg hover:shadow-glow transition-all">
+            <Button 
+              type="submit" 
+              className="w-full h-11 text-base font-semibold shadow-lg hover:shadow-glow transition-all"
+            >
               Entrar
             </Button>
+
             <div className="text-center space-y-3">
               <p className="text-sm text-muted-foreground">
                 Não tem uma conta?{' '}
@@ -81,10 +89,8 @@ const Login = () => {
                   Cadastre-se
                 </Link>
               </p>
-              <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-3">
-                💡 Ou use qualquer email e senha: <strong className="text-primary">demo</strong>
-              </p>
             </div>
+
           </form>
         </CardContent>
       </Card>
