@@ -74,13 +74,17 @@ class DashboardModel {
         ";
         $diaMaiorFaturamento = $this->conn->query($sql)->fetch(PDO::FETCH_ASSOC);
 
+        $sql = "SELECT COUNT(*) AS total_servicos FROM servico";
+        $totalServicos = $this->conn->query($sql)->fetch(PDO::FETCH_ASSOC);
+
         return [
             "faturamento_total"      => $fatTotal['faturamento_total'],
             "servicos_concluidos"    => $servicosConcluidos['servicos_concluidos'],
             "ticket_medio"           => $ticketMedio,
             "clientes_ativos"        => $clientesAtivos['clientes_ativos'],
             "servico_mais_lucrativo" => $servicoMaisLucrativo,
-            "dia_maior_faturamento"  => $diaMaiorFaturamento
+            "dia_maior_faturamento"  => $diaMaiorFaturamento,
+            "total_servicos" => $totalServicos['total_servicos'],
         ];
 
     } catch (\Throwable $th) {
