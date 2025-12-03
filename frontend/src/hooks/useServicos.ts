@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-const URL = "http://localhost/seu_projeto/controllers/servicosController.php";
+const URL = "http://localhost/HackatonVoucherSenac/controllers/servicosControllers.php";
 
 export const useServicos = () => {
   const [servicos, setServicos] = useState([]);
