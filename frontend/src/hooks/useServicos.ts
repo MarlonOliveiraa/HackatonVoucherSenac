@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Servico } from "@/types";
 
-const API_URL = "http://localhost/backend/controllers/servicosControllers.php";
+const API_URL = "http://localhost/hackatonvouchersenac/backend/controllers/servicosControllers.php";
 
 export const useServicos = () => {
   const [servicos, setServicos] = useState<Servico[]>([]);
