@@ -9,6 +9,10 @@ class DashboardModel {
     public function __construct() {
         $banco = new Database();
         $this->conn = $banco->Connect();
+
+        if ($this->conn === null) {
+            die("ERRO: Não foi possível conectar ao banco.");
+        }
     }
 
     public function getDashboardData() {
@@ -18,7 +22,7 @@ class DashboardModel {
 
         $sql = "SELECT COUNT(*) AS servicos_concluidos 
                 FROM orcamento 
-                WHERE status = 'aprovado'";
+                WHERE status_orcamento = 'aprovado'";
         $servicosConcluidos = $this->conn->query($sql)->fetch(PDO::FETCH_ASSOC);
 
         $sql = "
@@ -27,7 +31,7 @@ class DashboardModel {
                 SUM(oi.valor) AS total_servico
             FROM orcamento o
             LEFT JOIN orcamento_itens oi ON oi.orcamento_id = o.id
-            WHERE o.status = 'aprovado'
+            WHERE o.status_orcamento = 'aprovado'
             GROUP BY o.id
         ";
         $ticketMedioLista = $this->conn->query($sql)->fetchAll(PDO::FETCH_ASSOC);
