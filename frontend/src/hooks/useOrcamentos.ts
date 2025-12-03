@@ -26,9 +26,9 @@ const mockOrcamentos: Orcamento[] = [
 ];
 
 const mockItems: OrcamentoItem[] = [
-  { id: '1', orcamentoId: '1', servicoId: '1', valor: 2500 },
-  { id: '2', orcamentoId: '1', servicoId: '2', valor: 1200 },
-  { id: '3', orcamentoId: '2', servicoId: '3', valor: 5000 },
+  { id: '1', orcamentoId: '1', nomeItem: 'Serviço 1', valor: 2500 },
+  { id: '2', orcamentoId: '1', nomeItem: 'Serviço 2', valor: 1200 },
+  { id: '3', orcamentoId: '2', nomeItem: 'Serviço 3', valor: 5000 },
 ];
 
 export const useOrcamentos = () => {
@@ -64,7 +64,10 @@ export const useOrcamentos = () => {
     setItems(newItems);
   };
 
-  const addOrcamento = (orcamento: Omit<Orcamento, 'id'>, selectedItems: Omit<OrcamentoItem, 'id' | 'orcamentoId'>[]) => {
+  const addOrcamento = (
+    orcamento: Omit<Orcamento, 'id'>, 
+    selectedItems: Omit<OrcamentoItem, 'id' | 'orcamentoId'>[]
+  ) => {
     const newOrcamento: Orcamento = {
       ...orcamento,
       id: Date.now().toString(),
@@ -81,7 +84,21 @@ export const useOrcamentos = () => {
   };
 
   const updateOrcamento = (id: string, updates: Partial<Orcamento>) => {
-    saveOrcamentos(orcamentos.map(o => o.id === id ? { ...o, ...updates } : o));
+    saveOrcamentos(
+      orcamentos.map(o => o.id === id ? { ...o, ...updates } : o)
+    );
+  };
+
+  const updateOrcamentoItems = (
+    orcamentoId: string,
+    updatedItems: OrcamentoItem[]
+  ) => {
+    const newList = [
+      ...items.filter(i => i.orcamentoId !== orcamentoId),
+      ...updatedItems
+    ];
+
+    saveItems(newList);
   };
 
   const deleteOrcamento = (id: string) => {
@@ -99,5 +116,5 @@ export const useOrcamentos = () => {
       .reduce((acc, item) => acc + item.valor, 0);
   };
 
-  return { orcamentos, items, addOrcamento, updateOrcamento, deleteOrcamento, getOrcamentoItems, getOrcamentoTotal };
+  return { orcamentos, items, addOrcamento, updateOrcamento, updateOrcamentoItems, deleteOrcamento, getOrcamentoItems, getOrcamentoTotal };
 };
