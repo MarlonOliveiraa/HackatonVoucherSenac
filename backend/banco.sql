@@ -47,7 +47,7 @@ CREATE TABLE orcamento_itens (
     orcamento_id INT NOT NULL,
     nomeItem VARCHAR(200) NOT NULL,
     valor DECIMAL(10,2) NOT NULL,
-    FOREIGN KEY (orcamento_id) REFERENCES orcamento(id),
+    FOREIGN KEY (orcamento_id) REFERENCES orcamento(id)
 );
 
 -- ===========================

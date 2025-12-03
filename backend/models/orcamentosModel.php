@@ -25,11 +25,11 @@ class OrcamentoModel{
             $stmt = $this->conn->prepare($sql);
             $stmt->execute([
                 ':cliente_id' => $data['clienteId'],
-                ':servico_id' => $data['servicoteId'],
+                ':servico_id' => $data['servicoId'],
                 ':detalhes' => $data['detalhes'],
                 ':tempo_estimado' => $data['tempoEstimado'],
                 ':data_criacao' => $data['dataCriacao'],
-                ':status_orcamento' => $data['statusOrcamento']
+                ':status_orcamento' => $data['status']
             ]);
 
             $orcamentoId = $this->conn->lastInsertId();
@@ -55,6 +55,55 @@ class OrcamentoModel{
             return $orcamentoId;
 
         } catch (Exception $e) {
+            $this->conn->rollBack();
+            return false;
+        }
+    }
+
+    //Listar todos
+    public function listarOrcamentos(){
+        $sql = "SELECT * FROM orcamento ORDER BY id DESC";
+        $stmt = $this->conn->query($sql);
+        return $stmt->fetchAll();
+    }
+
+    //Itens de um orçamento
+    public function listarItens($orcamentoId){
+        $sql = "SELECT * FROM orcamento_itens WHERE orcamento_id = :id";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([':id' => $orcamentoId]);
+        return $stmt->fetchAll();
+    }
+
+    //Atualizar orçamento
+    public function atualizarOrcamento($id,$data){
+        $set = [];
+        $params = [':id' => $id];
+
+        foreach ($data as $campo => $valor){
+            $set[] = "$campo = :$campo";
+            $params[":$campo"] = $valor;
+        }
+
+        $sql = "UPDATE orcamento SET " . implode(", ", $set) . "WHERE id = :id";
+
+        $stmt = $this->conn->prepare($sql);
+        return $stmt->execute($params);
+    }
+
+    //Excluir orçamento
+    public function deleteOrcamento($id){
+        try{
+            $this->conn->beginTransaction();
+            $this->conn->prepare("DELETE FROM orcamento_itens WHERE orcamento_id = ?")
+                       ->execute([$id]);
+            
+            $this->conn->prepare("DELETE FROM orcamento WHERE id = ?")
+                       ->execute([$id]);
+
+            $this->conn->commit();
+            return true;
+        } catch (Exception $e){
             $this->conn->rollBack();
             return false;
         }
