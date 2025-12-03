@@ -71,7 +71,7 @@ export const Layout = ({ children }: LayoutProps) => {
         <div className="flex items-center gap-3 mb-3 p-2 rounded-lg hover:bg-secondary/50 transition-colors">
           <div className="h-10 w-10 rounded-full bg-gradient-primary flex items-center justify-center shadow-md">
             <span className="text-sm font-bold text-white">
-              {user?.name?.[0]?.toUpperCase()}
+              {user?.nome?.[0]?.toUpperCase()}
             </span>
           </div>
           <div className="flex-1 min-w-0">
