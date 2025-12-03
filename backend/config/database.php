@@ -17,10 +17,12 @@ class Database
             $conn->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
 
             return $conn;
+            echo "Conexão realizada com sucesso";
 
         } catch (PDOException $th) {
             error_log("Erro de conexão DB: " . $th->getMessage());
             return null;
+            echo "Erro na conexão: " . $th->getMessage();
         }
         
     }

@@ -14,12 +14,13 @@ const Cadastro = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  
   const { register } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (password !== confirmPassword) {
       toast.error('As senhas não coincidem');
       return;
@@ -30,12 +31,13 @@ const Cadastro = () => {
       return;
     }
 
-    const result = register(name, email, password);
-    if (result.success) {
+    const result = await register(name, email, password, confirmPassword);
+
+    if (result.status) {
       toast.success('Conta criada com sucesso!');
-      navigate('/dashboard');
+      navigate('/Login');
     } else {
-      toast.error(result.error || 'Erro ao criar conta');
+      toast.error(result.mensagem || 'Erro ao criar conta');
     }
   };
 
@@ -44,19 +46,24 @@ const Cadastro = () => {
       <div className="absolute top-4 right-4">
         <ThemeToggle />
       </div>
+
       <Card className="w-full max-w-md shadow-2xl border-0 overflow-hidden relative">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-accent/10 opacity-50" />
+
         <CardHeader className="space-y-1 text-center relative pb-6">
           <div className="flex justify-center mb-6">
             <div className="h-16 w-16 rounded-2xl bg-gradient-primary flex items-center justify-center shadow-glow animate-scale-in">
               <UserPlus className="h-8 w-8 text-white" />
             </div>
           </div>
-          <CardTitle className="text-3xl font-display font-bold text-gradient-primary">Criar Conta</CardTitle>
+          <CardTitle className="text-3xl font-display font-bold text-gradient-primary">
+            Criar Conta
+          </CardTitle>
           <CardDescription className="text-base">
             Preencha os dados abaixo para se cadastrar
           </CardDescription>
         </CardHeader>
+
         <CardContent className="relative">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
@@ -71,6 +78,7 @@ const Cadastro = () => {
                 required
               />
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="email" className="text-sm font-semibold">Email</Label>
               <Input
@@ -83,6 +91,7 @@ const Cadastro = () => {
                 required
               />
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="password" className="text-sm font-semibold">Senha</Label>
               <Input
@@ -95,8 +104,11 @@ const Cadastro = () => {
                 required
               />
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword" className="text-sm font-semibold">Confirmar senha</Label>
+              <Label htmlFor="confirmPassword" className="text-sm font-semibold">
+                Confirmar senha
+              </Label>
               <Input
                 id="confirmPassword"
                 type="password"
@@ -107,9 +119,14 @@ const Cadastro = () => {
                 required
               />
             </div>
-            <Button type="submit" className="w-full h-11 text-base font-semibold shadow-lg hover:shadow-glow transition-all">
+
+            <Button
+              type="submit"
+              className="w-full h-11 text-base font-semibold shadow-lg hover:shadow-glow transition-all"
+            >
               Cadastrar
             </Button>
+
             <p className="text-sm text-center text-muted-foreground">
               Já tem uma conta?{' '}
               <Link to="/login" className="text-primary font-semibold hover:underline">

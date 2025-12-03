@@ -1,29 +1,39 @@
 import { Layout } from '@/components/Layout';
-import { useClientes } from '@/hooks/useClientes';
-import { useOrcamentos } from '@/hooks/useOrcamentos';
-import { useFinanceiro } from '@/hooks/useFinanceiro';
-import { useServicos } from '@/hooks/useServicos';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DollarSign, TrendingUp, Users, FileText, CheckCircle2, Clock, Briefcase } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 const Dashboard = () => {
-  const { clientes } = useClientes();
-  const { orcamentos, getOrcamentoTotal } = useOrcamentos();
-  const { registros, getTotalRecebido } = useFinanceiro();
-  const { servicos } = useServicos();
+  const [dashboardData, setDashboardData] = useState(null);
 
-  const clientesAtivos = clientes.filter(c => c.status === 'ativo').length;
-  const orcamentosAprovados = orcamentos.filter(o => o.status === 'aprovado');
-  const orcamentosPendentes = orcamentos.filter(o => o.status === 'pendente');
-  const totalRecebido = getTotalRecebido();
-  
-  const totalOrcamentosAprovados = orcamentosAprovados.reduce(
-    (acc, o) => acc + getOrcamentoTotal(o.id), 0
-  );
+  useEffect(() => {
+    carregarDados();
+  }, []);
 
-  const getServicoNome = (servicoId: string) => {
-    return servicos.find(s => s.id === servicoId)?.nome || 'Serviço';
-  };
+  async function carregarDados() {
+    try {
+      const resposta = await fetch(
+        "http://localhost/hackatonvouchersenac/backend/router/dashboardRouter.php?acao=getDashboardData"
+      );
+
+      if (!resposta.ok) throw new Error("Erro ao buscar dados");
+
+      const dados = await resposta.json();
+      setDashboardData(dados.dados);
+
+    } catch (erro) {
+      console.error("Erro na requisição:", erro);
+    }
+  }
+
+  // EVITA RENDERIZAÇÃO ANTES DE CARREGAR
+  if (!dashboardData) {
+    return (
+      <Layout>
+        <div className="p-6 text-lg">Carregando dashboard...</div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -33,26 +43,28 @@ const Dashboard = () => {
           <p className="text-muted-foreground text-lg">Visão geral do seu negócio</p>
         </div>
 
-        {/* Cards de Métricas */}
+        {/* -------- CARDS PRINCIPAIS -------- */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+
+          {/* FATURAMENTO TOTAL */}
           <Card className="border-0 shadow-lg card-hover bg-gradient-to-br from-card to-card/50 backdrop-blur">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Recebido</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Faturamento Total</CardTitle>
               <div className="h-10 w-10 rounded-xl bg-accent/10 flex items-center justify-center">
                 <DollarSign className="h-5 w-5 text-accent" />
               </div>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-gradient-accent">
-                R$ {totalRecebido.toLocaleString('pt-BR')}
+                R$ {Number(dashboardData.faturamento_total).toLocaleString("pt-BR")}
               </div>
-              <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                <TrendingUp className="h-3 w-3" />
-                {registros.length} pagamentos registrados
+              <p className="text-xs text-muted-foreground mt-2">
+                Total recebido no período
               </p>
             </CardContent>
           </Card>
 
+          {/* CLIENTES ATIVOS */}
           <Card className="border-0 shadow-lg card-hover bg-gradient-to-br from-card to-card/50 backdrop-blur">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Clientes Ativos</CardTitle>
@@ -62,112 +74,98 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-gradient-primary">
-                {clientesAtivos}
+                {dashboardData.clientes_ativos}
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                Total de {clientes.length} clientes
+                Total de clientes ativos
               </p>
             </CardContent>
           </Card>
 
+          {/* TICKET MÉDIO */}
           <Card className="border-0 shadow-lg card-hover bg-gradient-to-br from-card to-card/50 backdrop-blur">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Orçamentos Aprovados</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Ticket Médio</CardTitle>
               <div className="h-10 w-10 rounded-xl bg-success/10 flex items-center justify-center">
                 <CheckCircle2 className="h-5 w-5 text-success" />
               </div>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-success">
-                {orcamentosAprovados.length}
+                R$ {Number(dashboardData.ticket_medio).toLocaleString("pt-BR")}
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                R$ {totalOrcamentosAprovados.toLocaleString('pt-BR')} em valor
+                Média por serviço concluído
               </p>
             </CardContent>
           </Card>
 
+          {/* SERVIÇO MAIS LUCRATIVO */}
           <Card className="border-0 shadow-lg card-hover bg-gradient-to-br from-card to-card/50 backdrop-blur">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Serviços Cadastrados</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Serviço Mais Lucrativo</CardTitle>
               <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
                 <Briefcase className="h-5 w-5 text-primary" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">
-                {servicos.length}
+              <div className="text-xl font-bold">
+                {dashboardData.servico_mais_lucrativo?.nome}
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                Catálogo de serviços
+                R$ {Number(dashboardData.servico_mais_lucrativo?.faturamento).toLocaleString("pt-BR")}
               </p>
             </CardContent>
           </Card>
+
         </div>
 
-        {/* Insights */}
+
+        {/*  RESUMO INFEROR*/}
         <div>
           <h2 className="text-2xl font-display font-bold mb-4">Resumo</h2>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+
+            {/* DIA DE MAIOR FATURAMENTO */}
             <Card className="border-0 shadow-lg card-hover bg-gradient-to-br from-accent/5 to-accent/10">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base font-semibold flex items-center gap-2">
                   <div className="h-8 w-8 rounded-lg bg-accent/20 flex items-center justify-center">
                     <FileText className="h-4 w-4 text-accent" />
                   </div>
-                  Orçamentos Pendentes
+                  Dia de Maior Faturamento
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-3xl font-bold text-accent">
-                  {orcamentosPendentes.length}
+                  {["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"][dashboardData.dia_maior_faturamento?.dia_semana]}
                 </p>
                 <p className="text-sm text-muted-foreground mt-3">
-                  Aguardando aprovação
+                  R$ {Number(dashboardData.dia_maior_faturamento?.total).toLocaleString("pt-BR")}
                 </p>
               </CardContent>
             </Card>
 
+            {/* SERVIÇOS CONCLUÍDOS */}
             <Card className="border-0 shadow-lg card-hover bg-gradient-to-br from-primary/5 to-primary/10">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base font-semibold flex items-center gap-2">
                   <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center">
                     <TrendingUp className="h-4 w-4 text-primary" />
                   </div>
-                  Ticket Médio
+                  Serviços Concluídos
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-3xl font-bold text-primary">
-                  R$ {registros.length > 0 
-                    ? Math.round(totalRecebido / registros.length).toLocaleString('pt-BR')
-                    : '0'
-                  }
+                  {dashboardData.servicos_concluidos}
                 </p>
                 <p className="text-sm text-muted-foreground mt-3">
-                  Por pagamento
+                  Total finalizado no período
                 </p>
               </CardContent>
             </Card>
 
-            <Card className="border-0 shadow-lg card-hover bg-gradient-to-br from-success/5 to-success/10">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base font-semibold flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-lg bg-success/20 flex items-center justify-center">
-                    <Clock className="h-4 w-4 text-success" />
-                  </div>
-                  Total Orçamentos
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-3xl font-bold text-success">
-                  {orcamentos.length}
-                </p>
-                <p className="text-sm text-muted-foreground mt-3">
-                  {orcamentosAprovados.length} aprovados, {orcamentosPendentes.length} pendentes
-                </p>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </div>
