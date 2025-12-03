@@ -1,64 +1,127 @@
 <?php
+
+ob_clean();
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json");
-header("Access-Control-Allow-Methods: POST, GET, PUT, DELETE");
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
 
-require_once "../config/database.php";
-require_once "../models/servicosModel.php";
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
 
-$db = (new Database())->connect();
-$servico = new Servico($db);
+require_once __DIR__ . "/../config/database.php";
+require_once __DIR__ . "/../utils/response.php";
+require_once __DIR__ . "/../models/servicosModel.php";
 
+$data = json_decode(file_get_contents("php://input"), true);
 $method = $_SERVER["REQUEST_METHOD"];
+
+// ========================================
+//                ROTAS
+// ========================================
 
 switch ($method) {
 
-// LISTAR
+
+    // =============================
+    // LISTAR
+    // =============================
     case "GET":
-        $result = $servico->listar();
-        echo json_encode($result);
+        try {
+            $lista = Servico::getAll();
+            response(true, "Lista carregada com sucesso", $lista);
+
+        } catch (Exception $e) {
+            response(false, "Erro interno ao listar");
+        }
     break;
 
+
+    // =============================
     // CRIAR
+    // =============================
     case "POST":
-        $data = json_decode(file_get_contents("php://input"));
+        $nome = $data["nome"] ?? "";
+        $descricao = $data["descricao"] ?? "";
 
-        $servico->nome          = $data->nome;
-        $servico->descricao = $data->descricao;
-
-        if ($servico->criar()) {
-            echo json_encode(["success" => true]);
-        } else {
-            echo json_encode(["success" => false]);
+        if (!$nome || !$descricao) {
+            response(false, "Preencha todos os campos");
         }
-        break;
 
+        try {
+            $ok = Servico::create($nome, $descricao);
+
+            if ($ok) {
+                response(true, "Serviço criado com sucesso");
+            }
+
+            response(false, "Erro ao criar serviço");
+
+        } catch (Exception $e) {
+            response(false, "Erro interno ao criar");
+        }
+    break;
+
+
+    // =============================
     // ATUALIZAR
+    // =============================
     case "PUT":
-        $id = $_GET["id"];
-        $data = json_decode(file_get_contents("php://input"));
+        $id = $_GET["id"] ?? "";
 
-        $servico->nome          = $data->nome;
-        $servico->descricao = $data->descricao;
-
-        if ($servico->editar($id)) {
-            echo json_encode(["success" => true]);
-        } else {
-            echo json_encode(["success" => false]);
+        if (!$id) {
+            response(false, "ID não informado");
         }
-        break;
 
+        $nome = $data["nome"] ?? "";
+        $descricao = $data["descricao"] ?? "";
+
+        if (!$nome || !$descricao) {
+            response(false, "Preencha todos os campos");
+        }
+
+        try {
+            $ok = Servico::update($id, $nome, $descricao);
+
+            if ($ok) {
+                response(true, "Serviço atualizado com sucesso");
+            }
+
+            response(false, "Erro ao atualizar serviço");
+
+        } catch (Exception $e) {
+            response(false, "Erro interno ao atualizar");
+        }
+    break;
+
+
+    // =============================
     // DELETAR
+    // =============================
     case "DELETE":
-        $id = $_GET["id"];
+        $id = $_GET["id"] ?? "";
 
-        if ($servico->deletar($id)) {
-            echo json_encode(["success" => true]);
-        } else {
-            echo json_encode(["success" => false]);
+        if (!$id) {
+            response(false, "ID não informado");
         }
-        break;
-}
 
-?>
+        try {
+            $ok = Servico::delete($id);
+
+            if ($ok) {
+                response(true, "Serviço deletado com sucesso");
+            }
+
+            response(false, "Erro ao deletar serviço");
+
+        } catch (Exception $e) {
+            response(false, "Erro interno ao deletar");
+        }
+    break;
+
+
+    default:
+        response(false, "Método inválido");
+}

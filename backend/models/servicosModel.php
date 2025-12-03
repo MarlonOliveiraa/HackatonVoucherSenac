@@ -1,58 +1,80 @@
 <?php
+require_once __DIR__ . "/../config/database.php";
 
-class Servico{
-    private $conn;
-    private $table = "servico";
+class Servico {
 
-    public $id;
-    public $nome;
-    public $descricao;	
+    private static $table = "servico";
+    private static $pdo;
 
-    public function __construct($db){
-        $this->conn = $db;
+    // =============================
+    // INICIALIZAR CONEXÃO
+    // =============================
+    private static function connect()
+    {
+        if (!self::$pdo) {
+            $db = new Database();
+            self::$pdo = $db->Connect();
+        }
+        return self::$pdo;
     }
 
-    public function listar() {
-        $query = "SELECT * FROM " . $this->table;
-        $stmt = $this->conn->prepare($query);
+    // =============================
+    // LISTAR TODOS
+    // =============================
+    public static function getAll() {
+
+        $pdo = self::connect();
+
+        $stmt = $pdo->prepare("SELECT * FROM " . self::$table);
         $stmt->execute();
+
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function criar() {
-        $query = "INSERT INTO " . $this->table . " 
-        SET nome=:nome, descricao=:descricao";
+    // =============================
+    // CRIAR SERVIÇO
+    // =============================
+    public static function create($nome, $descricao) {
 
-        $stmt = $this->conn->prepare($query);
+        $pdo = self::connect();
 
-        $stmt->bindParam(":nome", $this->nome);
-        $stmt->bindParam(":descricao", $this->descricao);
+        $stmt = $pdo->prepare("
+            INSERT INTO " . self::$table . " 
+            (nome, descricao) 
+            VALUES (?, ?)
+        ");
 
-        return $stmt->execute();
+        return $stmt->execute([$nome, $descricao]);
     }
 
-    public function editar($id){
-        $query = "UPDATE " . $this->table . "
-                  SET nome = :nome, descricao = :descricao
-                  WHERE id = :id";
+    // =============================
+    // EDITAR SERVIÇO
+    // =============================
+    public static function update($id, $nome, $descricao) {
 
-        $stmt = $this->conn->prepare($query);
+        $pdo = self::connect();
 
-        $stmt->bindParam(":nome", $this->nome);
-        $stmt->bindParam(":descricao", $this->descricao);
-        $stmt->bindParam(":id", $id);
+        $stmt = $pdo->prepare("
+            UPDATE " . self::$table . "
+            SET nome = ?, descricao = ?
+            WHERE id = ?
+        ");
 
-        return $stmt->execute();
+        return $stmt->execute([$nome, $descricao, $id]);
     }
 
-    public function deletar($id){
-        $query = "DELETE FROM " . $this->table . " WHERE id = :id";
+    // =============================
+    // DELETAR SERVIÇO
+    // =============================
+    public static function delete($id) {
 
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(":id", $id);
+        $pdo = self::connect();
 
-        return $stmt->execute();
+        $stmt = $pdo->prepare("
+            DELETE FROM " . self::$table . "
+            WHERE id = ?
+        ");
+
+        return $stmt->execute([$id]);
     }
 }
-
-?>
