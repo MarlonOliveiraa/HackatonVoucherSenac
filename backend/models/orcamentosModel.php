@@ -60,6 +60,11 @@ class OrcamentoModel{
         }
     }
 
+    //retornar a conexão
+    public function getConn(){
+        return $this->conn;
+    }
+
     //Listar todos
     public function listarOrcamentos(){
         $sql = "SELECT * FROM orcamento ORDER BY id DESC";
@@ -73,6 +78,45 @@ class OrcamentoModel{
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([':id' => $orcamentoId]);
         return $stmt->fetchAll();
+    }
+
+    //Obter a lista de ids de itens
+    public function getExistingItemIds($orcamentoId) {
+        $sql = "SELECT id FROM orcamento_itens WHERE orcamento_id = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([$orcamentoId]);
+        return $stmt->fetchAll(PDO::FETCH_COLUMN, 0); // Retorna array simples de IDs
+    }
+
+    //Deletar um item especifico
+    public function deleteItem($itemId) {
+        $sql = "DELETE FROM orcamento_itens WHERE id = ?";
+        $stmt = $this->conn->prepare($sql);
+        return $stmt->execute([$itemId]);
+    }
+
+    //Inserir ou atualizar um unico item
+    public function upsertItem($orcamentoId, $item) {
+        $valorNumerico = is_numeric($item['valor']) ? floatval($item['valor']) : 0;
+        
+        if (isset($item['id']) && is_numeric($item['id'])) { 
+            $sql = "UPDATE orcamento_itens SET nomeItem = :nomeItem, valor = :valor WHERE id = :id AND orcamento_id = :orcamentoId";
+            $stmt = $this->conn->prepare($sql);
+            return $stmt->execute([
+                ':nomeItem' => $item['nomeItem'],
+                ':valor' => $valorNumerico,
+                ':id' => $item['id'],
+                ':orcamentoId' => $orcamentoId
+            ]);
+        }
+        
+        $sql = "INSERT INTO orcamento_itens (orcamento_id, nomeItem, valor) VALUES (:orcamento_id, :nomeItem, :valor)";
+        $stmt = $this->conn->prepare($sql);
+        return $stmt->execute([
+            ':orcamento_id' => $orcamentoId,
+            ':nomeItem' => $item['nomeItem'],
+            ':valor' => $valorNumerico
+        ]);
     }
 
     //Atualizar orçamento
@@ -107,6 +151,28 @@ class OrcamentoModel{
             $this->conn->rollBack();
             return false;
         }
+    }
+
+    //Deletar todos os itens de um orçamento
+    public function deletarItens($orcamentoId){
+        $sql = "DELETE FROM orcamentos_itens WHERE orcamento_id = ?";
+        $stmt = $this->conn->prepare($sql);
+        return $stmt->execute([$orcamentoId]);
+    }
+
+    //Inserir itens
+    public function inserirItens($orcamentoId, $itens){
+        $sqlItem = "INSERT INTO orcamento_itens (orcamento_id, nomeItem, valor) VALUES ( ?, ?, ?)";
+        $stmtItem = $this->conn->prepare($sqlItem);
+
+        foreach ($itens as $item){
+            $valorNumerico = is_numeric($item['valor']) ? floatval($item['valor']) : 0;
+
+            $stmtItem->execute([
+                $orcamentoId, $item['nomeItem'], $valorNumerico
+            ]);
+        }
+        return true;
     }
 
 

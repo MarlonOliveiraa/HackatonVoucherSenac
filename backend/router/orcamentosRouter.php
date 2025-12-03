@@ -38,6 +38,17 @@ switch ($acao){
         }
         break;
 
+    case 'atualizarItens':
+        $id = $_GET['id'] ?? null;
+        if ($id && $body && isset($body['itens'])){
+            // Espera receber { "itens": [...] } no corpo
+            $resposta = $orcamentoController->atualizarItens($id, $body['itens']); 
+            echo json_encode($resposta);
+        } else {
+            echo json_encode(["erro" => "ID ou itens não informados!"]);
+        }
+        break;
+
     case 'atualizar':
         $id = $_GET['id'] ?? null;
         if ($id && $body){
