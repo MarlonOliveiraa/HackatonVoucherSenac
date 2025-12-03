@@ -26,7 +26,7 @@ export interface Orcamento {
 export interface OrcamentoItem {
   id: string;
   orcamentoId: string;
-  servicoId: string;
+  nomeItem: string;
   valor: number;
 }
 

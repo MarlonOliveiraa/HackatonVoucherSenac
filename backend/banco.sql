@@ -32,7 +32,7 @@ CREATE TABLE orcamento (
     tempo_estimado VARCHAR(100),     -- Tempo médio de execução
     data_criacao DATE NOT NULL,      -- Quando o orçamento foi criado
 
-    status ENUM('pendente', 'aprovado', 'cancelado')
+    status_orcamento ENUM('pendente', 'aprovado', 'cancelado')
            DEFAULT 'pendente',
 
     FOREIGN KEY (cliente_id) REFERENCES cliente(id),
@@ -45,10 +45,9 @@ CREATE TABLE orcamento (
 CREATE TABLE orcamento_itens (
     id INT AUTO_INCREMENT PRIMARY KEY,
     orcamento_id INT NOT NULL,
-    servico_id INT NOT   NULL,
-    valor DECIMAL(10,2),
-    FOREIGN KEY (orcamento_id) REFERENCES orcamento(id),
-    FOREIGN KEY (servico_id) REFERENCES servico(id)
+    nomeItem VARCHAR(200) NOT NULL,
+    valor DECIMAL(10,2) NOT NULL,
+    FOREIGN KEY (orcamento_id) REFERENCES orcamento(id)
 );
 
 -- ===========================
