@@ -1,75 +1,37 @@
-import { useState, useEffect } from 'react';
-
-interface User {
-  email: string;
-  name: string;
-}
-
-interface StoredUser extends User {
-  password: string;
-}
+import { useState, useEffect } from "react";
+import { registerUser, loginUser } from "@/services/authService";
 
 export const useAuth = () => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('currentUser');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
+    const saved = localStorage.getItem("currentUser");
+    if (saved) setUser(JSON.parse(saved));
     setLoading(false);
   }, []);
 
-  const getUsers = (): StoredUser[] => {
-    const users = localStorage.getItem('users');
-    return users ? JSON.parse(users) : [];
+  const register = async (nome: string, email: string, senha: string, confirmarSenha: string) => {
+    const data = await registerUser({ nome, email, senha, confirmarSenha });
+    return data;
   };
 
-  const register = (name: string, email: string, password: string): { success: boolean; error?: string } => {
-    const users = getUsers();
-    
-    if (users.find(u => u.email === email)) {
-      return { success: false, error: 'Este email já está cadastrado' };
+  const login = async (email: string, senha: string) => {
+    const data = await loginUser(email, senha);
+
+    if (data.status) { 
+      localStorage.setItem("currentUser", JSON.stringify(data.dados));
+      setUser(data.dados);
     }
 
-    const newUser: StoredUser = { name, email, password };
-    users.push(newUser);
-    localStorage.setItem('users', JSON.stringify(users));
-    
-    const currentUser = { name, email };
-    localStorage.setItem('currentUser', JSON.stringify(currentUser));
-    setUser(currentUser);
-    
-    return { success: true };
+    return data;
   };
 
-  const login = (email: string, password: string): { success: boolean; error?: string } => {
-    const users = getUsers();
-    const foundUser = users.find(u => u.email === email && u.password === password);
-    
-    if (foundUser) {
-      const currentUser = { name: foundUser.name, email: foundUser.email };
-      localStorage.setItem('currentUser', JSON.stringify(currentUser));
-      setUser(currentUser);
-      return { success: true };
-    }
-    
-    // Fallback para demo
-    if (password === 'demo') {
-      const mockUser = { email, name: email.split('@')[0] };
-      localStorage.setItem('currentUser', JSON.stringify(mockUser));
-      setUser(mockUser);
-      return { success: true };
-    }
-    
-    return { success: false, error: 'Email ou senha incorretos' };
-  };
 
   const logout = () => {
-    localStorage.removeItem('currentUser');
+    localStorage.removeItem("currentUser");
     setUser(null);
   };
 
-  return { user, loading, login, logout, register };
+  return { user, loading, register, login, logout };
 };

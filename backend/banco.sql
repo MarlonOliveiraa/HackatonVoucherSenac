@@ -11,6 +11,17 @@ CREATE TABLE cliente (
 );
 
 -- ===========================
+--   TABELA USUARIOS
+-- ===========================
+CREATE TABLE usuarios (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(150) NOT NULL,
+    email VARCHAR(150) NOT NULL UNIQUE,
+    senha VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ===========================
 --   TABELA SERVICO / TAREFA
 -- ===========================
 CREATE TABLE servico (
