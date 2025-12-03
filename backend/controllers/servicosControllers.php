@@ -14,13 +14,6 @@ $method = $_SERVER["REQUEST_METHOD"];
 
 switch ($method) {
 
-    // LISTAR
-    case "GET":
-        $stmt = $servico->listar();
-        $servicos = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        echo json_encode($servicos);
-        break;
-
     // CRIAR
     case "POST":
         $data = json_decode(file_get_contents("php://input"));
