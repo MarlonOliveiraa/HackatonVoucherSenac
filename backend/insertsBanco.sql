@@ -11,7 +11,7 @@ INSERT INTO servico (nome, descricao) VALUES
 ('Instalação de Iluminação LED', 'Instalação de luminárias e fitas LED.');
 
 INSERT INTO orcamento
-(cliente_id, servico_id, detalhes, tempo_estimado, data_criacao, status)
+(cliente_id, servico_id, detalhes, tempo_estimado, data_criacao, status_orcamento)
 VALUES
 (1, 1, 'Instalação de ar-condicionado 12.000 BTUs no quarto.', '3 horas', '2025-01-12', 'aprovado'),
 (2, 2, 'Revisão completa da parte elétrica, troca de disjuntores.', '2 dias', '2025-01-15', 'pendente'),
