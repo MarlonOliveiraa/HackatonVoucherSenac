@@ -49,7 +49,10 @@ try {
             break;
 
         case 'atualizar':
-            if (($method != 'POST' && $method != 'PUT') || !$id) { $statusCode = 405; break; }
+            if (($method != 'POST' && $method != 'PUT') || !$id) { 
+                $statusCode = 405;
+                break;
+            }
             $resposta = $controller->atualizar($id, $dados);
             break;
             
