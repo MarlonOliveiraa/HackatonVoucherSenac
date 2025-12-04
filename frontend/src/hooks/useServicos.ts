@@ -1,59 +1,150 @@
-import { useState, useEffect } from 'react';
-import { Servico } from '@/types';
+import { useEffect, useState } from "react";
+import { toast } from "@/components/ui/use-toast";
 
-const STORAGE_KEY = 'servicos';
-
-const mockServicos: Servico[] = [
-  {
-    id: '1',
-    nome: 'Consultoria de Marketing',
-    descricao: 'Análise completa de estratégia de marketing digital',
-  },
-  {
-    id: '2',
-    nome: 'Design de Logo',
-    descricao: 'Criação de identidade visual completa',
-  },
-  {
-    id: '3',
-    nome: 'Desenvolvimento Web',
-    descricao: 'Desenvolvimento de sites e aplicações web',
-  },
-];
+const URL = "http://localhost/HackatonVoucherSenac/backend/controllers/servicosControllers.php";
 
 export const useServicos = () => {
-  const [servicos, setServicos] = useState<Servico[]>([]);
+  const [servicos, setServicos] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // =====================================
+  // GET - LISTAR
+  // =====================================
+  const fetchServicos = async () => {
+    try {
+      setLoading(true);
+
+      const res = await fetch(URL);
+      const json = await res.json();
+
+      if (!json.status) {
+        toast({
+          title: "Erro ao carregar",
+          description: json.mensagem,
+        });
+        return;
+      }
+
+      setServicos(json.dados || []);
+
+    } catch (err) {
+      toast({
+        title: "Erro inesperado",
+        description: "Não foi possível carregar os serviços.",
+      });
+
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // =====================================
+  // POST - CRIAR
+  // =====================================
+  const addServico = async (dados) => {
+    try {
+      setLoading(true);
+
+      const res = await fetch(URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(dados),
+      });
+
+      const json = await res.json();
+
+      toast({
+        title: json.status ? "Sucesso" : "Erro",
+        description: json.mensagem,
+      });
+
+      if (json.status) fetchServicos();
+
+    } catch (err) {
+      toast({
+        title: "Erro inesperado",
+        description: "Não foi possível criar o serviço.",
+      });
+
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // =====================================
+  // PUT - EDITAR
+  // =====================================
+  const updateServico = async (id, dados) => {
+    try {
+      setLoading(true);
+
+      const res = await fetch(`${URL}?id=${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(dados),
+      });
+
+      const json = await res.json();
+
+      toast({
+        title: json.status ? "Atualizado" : "Erro",
+        description: json.mensagem,
+      });
+
+      if (json.status) fetchServicos();
+
+    } catch (err) {
+      toast({
+        title: "Erro inesperado",
+        description: "Não foi possível atualizar o serviço.",
+      });
+
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // =====================================
+  // DELETE
+  // =====================================
+  const deleteServico = async (id) => {
+    try {
+      setLoading(true);
+
+      const res = await fetch(`${URL}?id=${id}`, {
+        method: "DELETE",
+      });
+
+      const json = await res.json();
+
+      toast({
+        title: json.status ? "Deletado" : "Erro",
+        description: json.mensagem,
+      });
+
+      if (json.status) fetchServicos();
+
+    } catch (err) {
+      toast({
+        title: "Erro inesperado",
+        description: "Não foi possível deletar o serviço.",
+      });
+
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      setServicos(JSON.parse(stored));
-    } else {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(mockServicos));
-      setServicos(mockServicos);
-    }
+    fetchServicos();
   }, []);
 
-  const saveServicos = (newServicos: Servico[]) => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newServicos));
-    setServicos(newServicos);
+  return {
+    servicos,
+    loading,
+    addServico,
+    updateServico,
+    deleteServico,
+    fetchServicos,
   };
-
-  const addServico = (servico: Omit<Servico, 'id'>) => {
-    const newServico: Servico = {
-      ...servico,
-      id: Date.now().toString(),
-    };
-    saveServicos([...servicos, newServico]);
-  };
-
-  const updateServico = (id: string, updates: Partial<Servico>) => {
-    saveServicos(servicos.map(s => s.id === id ? { ...s, ...updates } : s));
-  };
-
-  const deleteServico = (id: string) => {
-    saveServicos(servicos.filter(s => s.id !== id));
-  };
-
-  return { servicos, addServico, updateServico, deleteServico };
 };
