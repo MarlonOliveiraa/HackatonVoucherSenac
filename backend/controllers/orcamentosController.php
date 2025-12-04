@@ -11,7 +11,7 @@ class OrcamentoController{
     }
 
     public function getItens($id) {
-        // A Model retorna o array de itens para um ID
+        // A Model retorna o array de itens para um id
         return OrcamentoModel::getItensByOrcamentoId($id); 
     }
 
@@ -21,15 +21,15 @@ class OrcamentoController{
         $orcamentoDataFrontend = $dados['orcamento'] ?? [];
         $itensData = $dados['itens'] ?? [];
 
-        // Mapeamento dos dados do frontend (camelCase) para o formato da Model (snake_case/colunas do DB)
+        // Mapeamento dos dados do frontend para o formato da Model
         $orcamentoDataDB = [
-            // Frontend key => DB column name
+            // Frontend key => nome da coluna no banco de dados
             'cliente_id' => $orcamentoDataFrontend['clienteId'] ?? null,
             'servico_id' => $orcamentoDataFrontend['servicoId'] ?? null,
             'detalhes' => $orcamentoDataFrontend['detalhes'] ?? null,
             'tempo_estimado' => $orcamentoDataFrontend['tempoEstimado'] ?? null,
             'data_criacao' => $orcamentoDataFrontend['dataCriacao'] ?? null,
-            'status_orcamento' => $orcamentoDataFrontend['status'] ?? 'pendente', // status no frontend
+            'status_orcamento' => $orcamentoDataFrontend['status'] ?? 'pendente',
         ];
 
         // Aqui usamos o novo array mapeado
@@ -51,7 +51,7 @@ class OrcamentoController{
         if (isset($dados['dataCriacao'])) $updatesDB['data_criacao'] = $dados['dataCriacao'];
         if (isset($dados['status'])) $updatesDB['status_orcamento'] = $dados['status'];
 
-        $ok = OrcamentoModel::editarOrcamento($id, $updatesDB); // Use $updatesDB
+        $ok = OrcamentoModel::editarOrcamento($id, $updatesDB);
         
         if ($ok) {
             return ["success" => true, "mensagem" => "Orçamento atualizado."];
@@ -63,7 +63,7 @@ class OrcamentoController{
     public function atualizarItens($orcamentoId, array $dados) {
         $novosItens = $dados['itens'] ?? [];
         
-        // Chamamos um novo método da Model que gerencia a transação internamente
+        // Chama um novo método da Model que gerencia a transação internamente
         $resultado = OrcamentoModel::sincronizarItens($orcamentoId, $novosItens);
 
         if ($resultado['success']) {
