@@ -20,7 +20,7 @@ class FinanceiroController{
     public function criar(array $dados) {
         // Mapeamento dos dados do frontend (camelCase) para o formato da Model (snake_case)
         $dataDB = [
-            // Frontend key => DB column name
+            // Frontend key => Nome da Coluna na DB
             'servico_id' => $dados['servicoId'] ?? null,
             'data_pagamento' => $dados['dataPagamento'] ?? null,
             'valor_pago' => $dados['valorPago'] ?? null,
