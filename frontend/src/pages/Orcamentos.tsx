@@ -42,26 +42,35 @@ const Orcamentos = () => {
       return;
     }
 
-    const items: OrcamentoItem[] = selectedServicosItems.map(item => ({
-      id: item.id ?? crypto.randomUUID(),
-      orcamentoId: selectOrcamento ?? '', // se for criação, ficará vazio e o hook pode preencher
+    // --- LÓGICA DE EDIÇÃO (UPDATE) ---
+  if (selectOrcamento){
+    // Para edição, precisamos do formato OrcamentoItem (valor como number/float)
+    const itemsParaEdicao: OrcamentoItem[] = selectedServicosItems.map(item => ({
+      id: item.id,
+      orcamentoId: selectOrcamento, 
       nomeItem: item.nomeItem,
-      valor: parseFloat(item.valor) || 0,
+      valor: parseFloat(item.valor) || 0, // Valor como NUMBER
     }));
 
-    // Editar
-    if (selectOrcamento){
-      updateOrcamento(selectOrcamento, formData);
-      updateOrcamentoItems(selectOrcamento, items);
-      toast.success("Orçamento atualizado!");
-      resetForm();
-      return;
-    } 
-
-    // Criar
-    addOrcamento(formData, items);
-    toast.success('Orçamento criado!');
+    updateOrcamento(selectOrcamento, formData);
+    updateOrcamentoItems(selectOrcamento, itemsParaEdicao);
+    toast.success("Orçamento atualizado!");
     resetForm();
+    return;
+  } 
+
+  // --- LÓGICA DE CRIAÇÃO (ADD) ---
+  
+  // Para criação, precisamos do formato simplificado que o hook espera (valor como STRING)
+  const itemsParaEnvio: { nomeItem: string, valor: string }[] = selectedServicosItems.map(item => ({
+    // Não incluímos 'id' ou 'orcamentoId' pois o backend fará a inserção
+    nomeItem: item.nomeItem,
+    valor: item.valor, // Valor como STRING (ex: "100.00")
+  }));
+  
+  addOrcamento(formData, itemsParaEnvio); // Chamada corrigida
+  toast.success('Orçamento criado!');
+  resetForm();
   };
 
   const resetForm = () => {

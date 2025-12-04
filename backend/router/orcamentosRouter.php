@@ -1,77 +1,81 @@
 <?php
 
 header("Access-Control-Allow-Origin: *");
-header("Content-Type: application/json");
-header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE");
-header("Access-Control-Allow-Headers: Content-Type");
+header("Content-Type: application/json; charset=UTF-8");
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+header("Access-Control-Max-Age: 3600");
+header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
+ob_clean();
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
 
 require_once __DIR__ . "/../controllers/orcamentosController.php";
 
-$acao = $_GET['acao'] ?? '';
-$orcamentoController = new OrcamentoController();
+$controller = new OrcamentoController();
+$method = $_SERVER['REQUEST_METHOD'];
+$acao = $_GET['acao'] ?? null;
+$id = $_GET['id'] ?? null;
 
-//pega dados do front-end
-$body = json_decode(file_get_contents('php://input'), true);
-
-switch ($acao){
-    case 'criar':
-        if ($body){
-            $resposta = $orcamentoController->criar($body);
-            echo json_encode($resposta);
-        } else{
-            echo json_encode(["erro" => "Dados não informados!"]);
-        }
-        break;
-    
-    case 'listar':
-        $resposta = $orcamentoController->listar();
-        echo json_encode($resposta);
-        break;
-    
-    case 'itens':
-        $id = $_GET['id'] ?? null;
-        if ($id){
-            $resposta = $orcamentoController->itens($id);
-            echo json_encode($resposta);
-        } else{
-            echo json_encode(["erro" => "ID não informado!"]);
-        }
-        break;
-
-    case 'atualizarItens':
-        $id = $_GET['id'] ?? null;
-        if ($id && $body && isset($body['itens'])){
-            // Espera receber { "itens": [...] } no corpo
-            $resposta = $orcamentoController->atualizarItens($id, $body['itens']); 
-            echo json_encode($resposta);
-        } else {
-            echo json_encode(["erro" => "ID ou itens não informados!"]);
-        }
-        break;
-
-    case 'atualizar':
-        $id = $_GET['id'] ?? null;
-        if ($id && $body){
-            $resposta = $orcamentoController->atualizar($id, $body);
-            echo json_encode($resposta);
-        } else{
-            echo json_encode(["erro" => "ID ou dados não informados!"]);
-        }
-        break;
-
-    case 'deletar':
-        $id = $_GET['id'] ?? null;
-        if($id){
-            $resposta = $orcamentoController->deletar($id);
-            echo json_encode($resposta);
-        } else{
-            echo json_encode(["erro" => "ID não informado!"]);
-        }
-        break;
-
-    default:
-        echo json_encode(["erro" => "Ação inválida!"]);
-        break;
+$dados = [];
+// Lê os dados do corpo da requisição JSON (para POST/PUT)
+if ($method == 'POST' || $method == 'PUT') {
+    $json = file_get_contents("php://input");
+    $dados = json_decode($json, true) ?? [];
 }
+
+$resposta = ["success" => false, "mensagem" => "Ação não reconhecida."];
+$statusCode = 200; // Começamos com sucesso
+
+// --- 3. ROTEAMENTO (SWITCH) ---
+try {
+    switch ($acao) {
+        
+        case 'listar':
+            $resposta = $controller->getAll();
+            break;
+
+        case 'itens':
+            if (!$id) { $statusCode = 400; $resposta['mensagem'] = "ID necessário para listar itens."; break; }
+            $resposta = $controller->getItens($id);
+            break;
+
+        case 'criar':
+            if ($method != 'POST') { $statusCode = 405; break; }
+            $resposta = $controller->criar($dados);
+            $statusCode = $resposta['success'] ? 201 : 422; // 201 Created ou 422 Unprocessable Entity
+            break;
+
+        case 'atualizar':
+            if (($method != 'POST' && $method != 'PUT') || !$id) { $statusCode = 405; break; }
+            $resposta = $controller->atualizar($id, $dados);
+            break;
+            
+        case 'atualizarItens':
+            if (($method != 'POST' && $method != 'PUT') || !$id) { $statusCode = 405; break; }
+            $resposta = $controller->atualizarItens($id, $dados);
+            break;
+            
+        case 'deletar':
+            if (($method != 'DELETE' && $method != 'GET') || !$id) { $statusCode = 405; break; }
+            $resposta = $controller->deletar($id);
+            break;
+
+        default:
+            $statusCode = 404; // Not Found
+            $resposta['mensagem'] = "Recurso não encontrado ou ação inválida.";
+            break;
+    }
+
+} catch (\Throwable $e) {
+    $statusCode = 500; // Internal Server Error
+    $resposta = ["success" => false, "mensagem" => "Erro interno no servidor: " . $e->getMessage()];
+}
+
+// --- 4. SAÍDA FINAL ---
+http_response_code($statusCode);
+echo json_encode($resposta);
 
 ?>

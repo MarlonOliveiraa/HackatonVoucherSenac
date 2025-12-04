@@ -1,184 +1,169 @@
 <?php
 
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . "/../config/database.php";
 
 class OrcamentoModel{
 
-    private $conn;
+    private static $table = "orcamento";
+    private static $pdo;
 
-    public function __construct(){
-        $db = new Database();
-        $this->conn = $db->Connect();
+    //Conectando ao banco
+    private static function connect(){
+        if (!self::$pdo){
+            $db = new Database();
+            self::$pdo = $db->Connect();
+        }
+        return self::$pdo;
     }
 
+    //Listar os orçamentos
+    public static function getAll(){
+        $pdo = self::connect();
+        $stmt = $pdo->prepare("
+            SELECT 
+                id, 
+                cliente_id AS clienteId, 
+                servico_id AS servicoId, 
+                detalhes, 
+                tempo_estimado AS tempoEstimado, 
+                data_criacao AS dataCriacao, 
+                status_orcamento AS status 
+            FROM orcamento
+        ");
+        $stmt->execute();
 
-    //Criar Orçamento
-    public function criarOrcamento($data, $itens){
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    //Listar itens por id do orçamento
+    public static function getItensByOrcamentoId($orcamentoId){
+        $pdo = self::connect();
+        $stmt = $pdo->prepare("
+            SELECT 
+                id, 
+                orcamento_id AS orcamentoId, 
+                nomeItem, 
+                valor 
+            FROM orcamento_itens 
+            WHERE orcamento_id = ?
+        ");
+        $stmt->execute([$orcamentoId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    //Criar orçamento
+    public static function criarOrcamento(array $orcamentoData, array $itensData){
+        $pdo = self::connect();
+
         try {
-            $this->conn->beginTransaction();
+            $pdo->beginTransaction();
 
-            //Inserindo orçamento
-            $sql = " INSERT INTO orcamento
-                (cliente_id, servico_id, detalhes, tempo_estimado, data_criacao, status_orcamento)
-                VALUES (:cliente_id, :servico_id, :detalhes, :tempo_estimado, :data_criacao, :status_orcamento)";
-
-            $stmt = $this->conn->prepare($sql);
+            // 1. Inserir Orçamento Principal
+            $stmt = $pdo->prepare("INSERT INTO orcamento 
+                                    (cliente_id, servico_id, detalhes, tempo_estimado, data_criacao, status_orcamento)
+                                    VALUES (?, ?, ?, ?, ?, ?)");
+            
             $stmt->execute([
-                ':cliente_id' => $data['clienteId'],
-                ':servico_id' => $data['servicoId'],
-                ':detalhes' => $data['detalhes'],
-                ':tempo_estimado' => $data['tempoEstimado'],
-                ':data_criacao' => $data['dataCriacao'],
-                ':status_orcamento' => $data['status']
+                $orcamentoData['cliente_id'], 
+                $orcamentoData['servico_id'], 
+                $orcamentoData['detalhes'], 
+                $orcamentoData['tempo_estimado'], 
+                $orcamentoData['data_criacao'], 
+                $orcamentoData['status_orcamento']
             ]);
 
-            $orcamentoId = $this->conn->lastInsertId();
+            $orcamentoId = $pdo->lastInsertId();
 
-
-            //inserindo itens do orçamento
-            $sqlItem = "INSERT INTO orcamento_itens
-                (orcamento_id, nomeItem,valor)
-                VALUES (:orcamento_id, :nomeItem, :valor)";
-
-            $stmtItem = $this->conn->prepare($sqlItem);
-
-            foreach ($itens as $item){
-                $stmtItem->execute([
-                    ':orcamento_id' => $orcamentoId,
-                    ':nomeItem' => $item['nomeItem'],
-                    ':valor' => $item['valor']
-                ]);
+            // 2. Inserir Itens do Orçamento
+            foreach ($itensData as $item) {
+                self::criarItem($orcamentoId, $item['nomeItem'], $item['valor']);
             }
 
-            $this->conn->commit();
-
-            return $orcamentoId;
-
-        } catch (Exception $e) {
-            $this->conn->rollBack();
+            $pdo->commit();
+            return $orcamentoId; 
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
             return false;
         }
     }
 
-    //retornar a conexão
-    public function getConn(){
-        return $this->conn;
-    }
-
-    //Listar todos
-    public function listarOrcamentos(){
-        $sql = "SELECT * FROM orcamento ORDER BY id DESC";
-        $stmt = $this->conn->query($sql);
-        return $stmt->fetchAll();
-    }
-
-    //Itens de um orçamento
-    public function listarItens($orcamentoId){
-        $sql = "SELECT * FROM orcamento_itens WHERE orcamento_id = :id";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->execute([':id' => $orcamentoId]);
-        return $stmt->fetchAll();
-    }
-
-    //Obter a lista de ids de itens
-    public function getExistingItemIds($orcamentoId) {
-        $sql = "SELECT id FROM orcamento_itens WHERE orcamento_id = ?";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->execute([$orcamentoId]);
-        return $stmt->fetchAll(PDO::FETCH_COLUMN, 0); // Retorna array simples de IDs
-    }
-
-    //Deletar um item especifico
-    public function deleteItem($itemId) {
-        $sql = "DELETE FROM orcamento_itens WHERE id = ?";
-        $stmt = $this->conn->prepare($sql);
-        return $stmt->execute([$itemId]);
-    }
-
-    //Inserir ou atualizar um unico item
-    public function upsertItem($orcamentoId, $item) {
-        $valorNumerico = is_numeric($item['valor']) ? floatval($item['valor']) : 0;
+   //Criar um item
+    public static function criarItem($orcamentoId, $nomeItem, $valor) {
+        $pdo = self::connect();
         
-        if (isset($item['id']) && is_numeric($item['id'])) { 
-            $sql = "UPDATE orcamento_itens SET nomeItem = :nomeItem, valor = :valor WHERE id = :id AND orcamento_id = :orcamentoId";
-            $stmt = $this->conn->prepare($sql);
-            return $stmt->execute([
-                ':nomeItem' => $item['nomeItem'],
-                ':valor' => $valorNumerico,
-                ':id' => $item['id'],
-                ':orcamentoId' => $orcamentoId
-            ]);
-        }
-        
-        $sql = "INSERT INTO orcamento_itens (orcamento_id, nomeItem, valor) VALUES (:orcamento_id, :nomeItem, :valor)";
-        $stmt = $this->conn->prepare($sql);
+        $stmt = $pdo->prepare("INSERT INTO orcamento_itens (orcamento_id, nomeItem, valor)
+                               VALUES ( ?, ?, ?)");
+        return $stmt->execute([$orcamentoId, $nomeItem, $valor]);
+    }
+
+    //Editar Orçamento
+    public static function editarOrcamento($id, array $body){
+        $pdo = self::connect();
+        $stmt = $pdo->prepare("UPDATE orcamento
+                                SET cliente_id = ?, servico_id = ?, detalhes = ?, tempo_estimado = ?, data_criacao = ?, status_orcamento = ?
+                                WHERE id = ?");
         return $stmt->execute([
-            ':orcamento_id' => $orcamentoId,
-            ':nomeItem' => $item['nomeItem'],
-            ':valor' => $valorNumerico
+            $body['cliente_id'], 
+            $body['servico_id'], 
+            $body['detalhes'], 
+            $body['tempo_estimado'], 
+            $body['data_criacao'], 
+            $body['status_orcamento'],
+            $id
         ]);
     }
 
-    //Atualizar orçamento
-    public function atualizarOrcamento($id,$data){
-        $set = [];
-        $params = [':id' => $id];
-
-        foreach ($data as $campo => $valor){
-            $set[] = "$campo = :$campo";
-            $params[":$campo"] = $valor;
-        }
-
-        $sql = "UPDATE orcamento SET " . implode(", ", $set) . "WHERE id = :id";
-
-        $stmt = $this->conn->prepare($sql);
-        return $stmt->execute($params);
+    //Deletar item
+    public static function deleteItem($itemId){
+        $pdo = self::connect();
+        $stmt = $pdo->prepare("DELETE FROM orcamento_itens WHERE id = ?");
+        return $stmt->execute([$itemId]);
     }
 
-    //Excluir orçamento
-    public function deleteOrcamento($id){
-        try{
-            $this->conn->beginTransaction();
-            $this->conn->prepare("DELETE FROM orcamento_itens WHERE orcamento_id = ?")
-                       ->execute([$id]);
-            
-            $this->conn->prepare("DELETE FROM orcamento WHERE id = ?")
-                       ->execute([$id]);
+    //Obter id existente
+    public static function getExistingItemIds($orcamentoId){
+        $pdo = self::connect();
+        $stmt = $pdo->prepare("SELECT id FROM orcamento_itens WHERE orcamento_id = ?");
+        $stmt->execute([$orcamentoId]);
+        return $stmt->fetchAll(PDO::FETCH_COLUMN);
+    }
 
-            $this->conn->commit();
+    //Insere ou edita um item do orçamento
+    public static function upsertItem($orcamentoId, array $item){
+        $pdo = self::connect();
+        $itemId = $item['id'] ?? null;
+        
+        if ($itemId && is_numeric($itemId)) {
+            // Atualizar
+            $stmt = $pdo->prepare("UPDATE orcamento_itens SET nomeItem = ?, valor = ? WHERE id = ? AND orcamento_id = ?");
+            return $stmt->execute([$item['nomeItem'], $item['valor'], $itemId, $orcamentoId]);
+        } else {
+            // Inserir (novo item)
+            return self::criarItem($orcamentoId, $item['nomeItem'], $item['valor']);
+        }
+    }
+
+    //Detelatar Orçamento
+    public static function deletarOrcamento($id){
+        $pdo = self::connect();
+        try {
+            $pdo->beginTransaction();
+
+            // Deletar os itens do orçamento
+            $stmtItens = $pdo->prepare("DELETE FROM orcamento_itens WHERE orcamento_id = ?");
+            $stmtItens->execute([$id]);
+
+            // Deletar orçamento
+            $stmtOrcamento = $pdo->prepare("DELETE FROM orcamento WHERE id = ?");
+            $stmtOrcamento->execute([$id]); // CORRIGIDO: Usando $stmtOrcamento
+            
+            $pdo->commit();
             return true;
-        } catch (Exception $e){
-            $this->conn->rollBack();
+        } catch (\Throwable $e) { // Usar \Throwable para capturar Exceptions e Errors
+            $pdo->rollBack();
             return false;
         }
     }
-
-    //Deletar todos os itens de um orçamento
-    public function deletarItens($orcamentoId){
-        $sql = "DELETE FROM orcamentos_itens WHERE orcamento_id = ?";
-        $stmt = $this->conn->prepare($sql);
-        return $stmt->execute([$orcamentoId]);
-    }
-
-    //Inserir itens
-    public function inserirItens($orcamentoId, $itens){
-        $sqlItem = "INSERT INTO orcamento_itens (orcamento_id, nomeItem, valor) VALUES ( ?, ?, ?)";
-        $stmtItem = $this->conn->prepare($sqlItem);
-
-        foreach ($itens as $item){
-            $valorNumerico = is_numeric($item['valor']) ? floatval($item['valor']) : 0;
-
-            $stmtItem->execute([
-                $orcamentoId, $item['nomeItem'], $valorNumerico
-            ]);
-        }
-        return true;
-    }
-
-
 }
-
-
-
 
 ?>
