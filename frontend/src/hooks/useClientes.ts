@@ -1,59 +1,88 @@
 import { useState, useEffect } from 'react';
 import { Cliente } from '@/types';
 
-const STORAGE_KEY = 'clientes';
-
-const mockClientes: Cliente[] = [
-  {
-    id: '1',
-    nome: 'João Silva',
-    telefone: '(11) 98765-4321',
-    email: 'joao@email.com',
-    observacoes: 'Cliente preferencial',
-    status: 'ativo',
-  },
-  {
-    id: '2',
-    nome: 'Maria Santos',
-    telefone: '(11) 91234-5678',
-    email: 'maria@email.com',
-    status: 'ativo',
-  },
-];
+const API_BASE = 'http://localhost/hackatonvouchersenac/backend/router/clientesRouter.php';
 
 export const useClientes = () => {
   const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [refresh, setRefresh] = useState(0);
 
+  // Força atualização geral
+  const forceRefresh = () => setRefresh(r => r + 1);
+
+  // Carrega clientes sempre que refresh mudar
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      setClientes(JSON.parse(stored));
-    } else {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(mockClientes));
-      setClientes(mockClientes);
+    fetchClientes();
+  }, [refresh]);
+
+  // Busca lista no backend
+  const fetchClientes = async () => {
+    try {
+      const res = await fetch(`${API_BASE}?acao=listar`);
+      const json = await res.json();
+      setClientes(json.status === 'sucesso' ? json.data : []);
+    } catch {
+      setClientes([]);
     }
-  }, []);
-
-  const saveClientes = (newClientes: Cliente[]) => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newClientes));
-    setClientes(newClientes);
   };
 
-  const addCliente = (cliente: Omit<Cliente, 'id'>) => {
-    const newCliente: Cliente = {
-      ...cliente,
-      id: Date.now().toString(),
-    };
-    saveClientes([...clientes, newCliente]);
+  // Cria cliente
+  const addCliente = async (cliente: Omit<Cliente, 'id'>) => {
+    try {
+      const res = await fetch(`${API_BASE}?acao=criar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(cliente),
+      });
+
+      const json = await res.json();
+
+      if (json.status === 'sucesso') {
+        forceRefresh(); // recarrega lista com ID real
+      }
+    } catch (e) {
+      console.error("Erro ao criar cliente", e);
+    }
   };
 
-  const updateCliente = (id: string, updates: Partial<Cliente>) => {
-    saveClientes(clientes.map(c => c.id === id ? { ...c, ...updates } : c));
+  // Atualiza cliente
+  const updateCliente = async (id: string, updates: Partial<Cliente>) => {
+    try {
+      const res = await fetch(`${API_BASE}?acao=atualizar&id=${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
+
+      const json = await res.json();
+
+      if (json.status === 'sucesso') {
+        forceRefresh();
+      }
+    } catch {
+      console.error("Erro ao atualizar cliente");
+    }
   };
 
-  const deleteCliente = (id: string) => {
-    saveClientes(clientes.filter(c => c.id !== id));
+  // Deleta cliente
+  const deleteCliente = async (id: string) => {
+    try {
+      const res = await fetch(`${API_BASE}?acao=deletar&id=${id}`, {
+        method: 'DELETE'
+      });
+      const json = await res.json();
+
+      if (json.status === 'sucesso') {
+        forceRefresh();
+      } else {
+        alert(json.mensagem || "Erro ao excluir.");
+      }
+
+    } catch (e) {
+      alert("Erro ao excluir cliente.");
+      console.error(e);
+    }
   };
 
-  return { clientes, addCliente, updateCliente, deleteCliente };
+  return { clientes, addCliente, updateCliente, deleteCliente, refresh, forceRefresh };
 };
