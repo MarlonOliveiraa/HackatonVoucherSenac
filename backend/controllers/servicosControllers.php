@@ -11,37 +11,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-require_once __DIR__ . "/../config/database.php";
 require_once __DIR__ . "/../utils/response.php";
 require_once __DIR__ . "/../models/servicosModel.php";
 
 $data = json_decode(file_get_contents("php://input"), true);
 $method = $_SERVER["REQUEST_METHOD"];
 
-// ========================================
-//                ROTAS
-// ========================================
-
 switch ($method) {
 
-
-    // =============================
-    // LISTAR
-    // =============================
+    // ======================================================
+    // GET – LISTAR SERVIÇOS
+    // ======================================================
     case "GET":
         try {
             $lista = Servico::getAll();
             response(true, "Lista carregada com sucesso", $lista);
-
         } catch (Exception $e) {
             response(false, "Erro interno ao listar");
         }
     break;
 
 
-    // =============================
-    // CRIAR
-    // =============================
+    // ======================================================
+    // POST – CRIAR SERVIÇO
+    // ======================================================
     case "POST":
         $nome = $data["nome"] ?? "";
         $descricao = $data["descricao"] ?? "";
@@ -55,9 +48,9 @@ switch ($method) {
 
             if ($ok) {
                 response(true, "Serviço criado com sucesso");
+            } else {
+                response(false, "Erro ao criar serviço");
             }
-
-            response(false, "Erro ao criar serviço");
 
         } catch (Exception $e) {
             response(false, "Erro interno ao criar");
@@ -65,11 +58,11 @@ switch ($method) {
     break;
 
 
-    // =============================
-    // ATUALIZAR
-    // =============================
+    // ======================================================
+    // PUT – ATUALIZAR SERVIÇO
+    // ======================================================
     case "PUT":
-        $id = $_GET["id"] ?? "";
+        $id = $_GET["id"] ?? null;
 
         if (!$id) {
             response(false, "ID não informado");
@@ -87,9 +80,9 @@ switch ($method) {
 
             if ($ok) {
                 response(true, "Serviço atualizado com sucesso");
+            } else {
+                response(false, "Erro ao atualizar serviço");
             }
-
-            response(false, "Erro ao atualizar serviço");
 
         } catch (Exception $e) {
             response(false, "Erro interno ao atualizar");
@@ -97,11 +90,11 @@ switch ($method) {
     break;
 
 
-    // =============================
-    // DELETAR
-    // =============================
+    // ======================================================
+    // DELETE – EXCLUIR SERVIÇO
+    // ======================================================
     case "DELETE":
-        $id = $_GET["id"] ?? "";
+        $id = $_GET["id"] ?? null;
 
         if (!$id) {
             response(false, "ID não informado");
@@ -112,9 +105,9 @@ switch ($method) {
 
             if ($ok) {
                 response(true, "Serviço deletado com sucesso");
+            } else {
+                response(false, "Erro ao deletar serviço");
             }
-
-            response(false, "Erro ao deletar serviço");
 
         } catch (Exception $e) {
             response(false, "Erro interno ao deletar");
@@ -122,6 +115,7 @@ switch ($method) {
     break;
 
 
+    // ======================================================
     default:
         response(false, "Método inválido");
 }
