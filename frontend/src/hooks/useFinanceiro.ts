@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Financeiro } from '@/types';
 
-const API_BASE_URL = 'http://localhost/HackatonVoucherSenac/backend/router/financeiroRouter.php';
+const API_BASE_URL = 'http://localhost/hackatonvouchersenac/backend/router/financeiroRouter.php';
 
 export const useFinanceiro = () => {
   const [registros, setRegistros] = useState<Financeiro[]>([]);
@@ -16,10 +16,11 @@ export const useFinanceiro = () => {
         throw new Error('Falha ao buscar registros financeiros.');
       }
       const fetchedRegistros: Financeiro[] = await response.json();
-      // Converte id para string
+      // Converte id e servicoId para string
       const converted = fetchedRegistros.map(r => ({
         ...r,
         id: r.id.toString(),
+        servicoId: r.servicoId.toString(),
         valorPago: r.valorPago || 0,
       }));
       setRegistros(converted);
