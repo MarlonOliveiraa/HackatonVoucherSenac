@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "@/components/ui/use-toast";
 
-const URL = "http://localhost/HackatonVoucherSenac/controllers/servicosControllers.php";
+const URL = "http://localhost/HackatonVoucherSenac/backend/controllers/servicosControllers.php";
 
 export const useServicos = () => {
   const [servicos, setServicos] = useState([]);
@@ -17,15 +17,15 @@ export const useServicos = () => {
       const res = await fetch(URL);
       const json = await res.json();
 
-      if (!json.success) {
+      if (!json.status) {
         toast({
           title: "Erro ao carregar",
-          description: json.message,
+          description: json.mensagem,
         });
         return;
       }
 
-      setServicos(json.data || []);
+      setServicos(json.dados || []);
 
     } catch (err) {
       toast({
@@ -54,11 +54,11 @@ export const useServicos = () => {
       const json = await res.json();
 
       toast({
-        title: json.success ? "Sucesso" : "Erro",
-        description: json.message,
+        title: json.status ? "Sucesso" : "Erro",
+        description: json.mensagem,
       });
 
-      if (json.success) fetchServicos();
+      if (json.status) fetchServicos();
 
     } catch (err) {
       toast({
@@ -87,11 +87,11 @@ export const useServicos = () => {
       const json = await res.json();
 
       toast({
-        title: json.success ? "Atualizado" : "Erro",
-        description: json.message,
+        title: json.status ? "Atualizado" : "Erro",
+        description: json.mensagem,
       });
 
-      if (json.success) fetchServicos();
+      if (json.status) fetchServicos();
 
     } catch (err) {
       toast({
@@ -118,11 +118,11 @@ export const useServicos = () => {
       const json = await res.json();
 
       toast({
-        title: json.success ? "Deletado" : "Erro",
-        description: json.message,
+        title: json.status ? "Deletado" : "Erro",
+        description: json.mensagem,
       });
 
-      if (json.success) fetchServicos();
+      if (json.status) fetchServicos();
 
     } catch (err) {
       toast({
