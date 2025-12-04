@@ -16,7 +16,7 @@ class Servico {
         return self::$pdo;
     }
 
-    // LISTAR TODOS
+    // LISTAR TODOS SERVIÇOS
     public static function getAll() {
 
         $pdo = self::connect();
