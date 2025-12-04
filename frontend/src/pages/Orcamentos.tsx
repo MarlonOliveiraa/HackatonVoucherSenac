@@ -34,7 +34,7 @@ const Orcamentos = () => {
     dataCriacao: new Date().toISOString().split('T')[0],
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (selectedServicosItems.length === 0) {
@@ -42,26 +42,41 @@ const Orcamentos = () => {
       return;
     }
 
-    const items: OrcamentoItem[] = selectedServicosItems.map(item => ({
-      id: item.id ?? crypto.randomUUID(),
-      orcamentoId: selectOrcamento ?? '', // se for criação, ficará vazio e o hook pode preencher
+    // --- Editando/update ---
+  if (selectOrcamento){
+    const itemsParaEdicao: OrcamentoItem[] = selectedServicosItems.map(item => ({
+      id: item.id as string,
+      orcamentoId: selectOrcamento, 
       nomeItem: item.nomeItem,
-      valor: parseFloat(item.valor) || 0,
+      valor: parseFloat(item.valor) || 0, // numero float
     }));
 
-    // Editar
-    if (selectOrcamento){
-      updateOrcamento(selectOrcamento, formData);
-      updateOrcamentoItems(selectOrcamento, items);
+    try{
+      //espera o update principal
+      await updateOrcamento(selectOrcamento, formData);
+
+      //esperando o update dos itens
+      await updateOrcamentoItems(selectOrcamento, itemsParaEdicao);
+
       toast.success("Orçamento atualizado!");
       resetForm();
-      return;
-    } 
+    } catch(error){
+      console.error("Erro na edição: ", error);
+      toast.error("Falha ao atualizar o orçamento e/ou itens. Verifique o console.");
+    }
+    return;
+  } 
 
-    // Criar
-    addOrcamento(formData, items);
-    toast.success('Orçamento criado!');
-    resetForm();
+
+  // --- Criando/ADD ---
+  const itemsParaEnvio: { nomeItem: string, valor: string }[] = selectedServicosItems.map(item => ({
+    nomeItem: item.nomeItem,
+    valor: item.valor, // valor como string
+  }));
+  
+  addOrcamento(formData, itemsParaEnvio);
+  toast.success('Orçamento criado!');
+  resetForm();
   };
 
   const resetForm = () => {
@@ -92,7 +107,7 @@ const Orcamentos = () => {
       id: i.id,
       orcamentoId: i.orcamentoId,
       nomeItem: i.nomeItem,
-      valor: String(i.valor), // valor como string para os inputs
+      valor: String(i.valor), // valor como string
     }));
     setSelectedServicosItems(existingItems);
   

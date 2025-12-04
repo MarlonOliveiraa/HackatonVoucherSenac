@@ -1,120 +1,201 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Orcamento, OrcamentoItem } from '@/types';
 
-const STORAGE_KEY = 'orcamentos';
-const ITEMS_KEY = 'orcamento_items';
-
-const mockOrcamentos: Orcamento[] = [
-  {
-    id: '1',
-    clienteId: '1',
-    servicoId: '1',
-    detalhes: 'Consultoria completa para reestruturação de marketing digital',
-    tempoEstimado: '2 semanas',
-    dataCriacao: '2024-11-05',
-    status: 'aprovado',
-  },
-  {
-    id: '2',
-    clienteId: '2',
-    servicoId: '3',
-    detalhes: 'Desenvolvimento de e-commerce completo com integração de pagamentos',
-    tempoEstimado: '1 mês',
-    dataCriacao: '2024-11-25',
-    status: 'pendente',
-  },
-];
-
-const mockItems: OrcamentoItem[] = [
-  { id: '1', orcamentoId: '1', nomeItem: 'Serviço 1', valor: 2500 },
-  { id: '2', orcamentoId: '1', nomeItem: 'Serviço 2', valor: 1200 },
-  { id: '3', orcamentoId: '2', nomeItem: 'Serviço 3', valor: 5000 },
-];
+const API_BASE_URL = 'http://localhost/hackatonvouchersenac/backend/router/orcamentosRouter.php';
 
 export const useOrcamentos = () => {
-  const [orcamentos, setOrcamentos] = useState<Orcamento[]>([]);
-  const [items, setItems] = useState<OrcamentoItem[]>([]);
+    const [orcamentos, setOrcamentos] = useState<Orcamento[]>([]);
+    const [items, setItems] = useState<OrcamentoItem[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    const storedItems = localStorage.getItem(ITEMS_KEY);
-    
-    if (stored) {
-      setOrcamentos(JSON.parse(stored));
-    } else {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(mockOrcamentos));
-      setOrcamentos(mockOrcamentos);
-    }
+    // --- 2. FUNÇÃO DE BUSCA PRINCIPAL (GET) ---
+    // Usada para carregar os dados na inicialização e após qualquer alteração (POST, PUT, DELETE)
+    const fetchOrcamentos = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            // 1. Busca dos Orçamentos Principais
+            const responseOrc = await fetch(`${API_BASE_URL}?acao=listar`);
+            if (!responseOrc.ok) {
+                throw new Error('Falha ao buscar orçamentos.');
+            }
+            const fetchedOrcamentos: Orcamento[] = await responseOrc.json();
+            setOrcamentos(fetchedOrcamentos);
 
-    if (storedItems) {
-      setItems(JSON.parse(storedItems));
-    } else {
-      localStorage.setItem(ITEMS_KEY, JSON.stringify(mockItems));
-      setItems(mockItems);
-    }
-  }, []);
+            // 2. Busca dos Itens para todos os Orçamentos
+            const itemPromises = fetchedOrcamentos.map(async (o) => {
+                 const itemResponse = await fetch(`${API_BASE_URL}?acao=itens&id=${o.id}`);
+                 if (!itemResponse.ok) return [];
+                 // O backend retorna 'valor' como string? Se sim, precisa ser convertido aqui.
+                 const rawItems: any[] = await itemResponse.json();
+                 
+                 // Certifique-se de que 'valor' é um number para o frontend
+                 return rawItems.map(item => ({
+                     ...item,
+                     valor: parseFloat(item.valor) // Conversão crítica
+                 })) as OrcamentoItem[];
+            });
+            
+            const itemsArrays = await Promise.all(itemPromises);
+            const allItems = itemsArrays.flat(); 
+            setItems(allItems);
 
-  const saveOrcamentos = (newOrcamentos: Orcamento[]) => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newOrcamentos));
-    setOrcamentos(newOrcamentos);
-  };
+        } catch (error) {
+            console.error("Erro ao carregar dados do servidor:", error);
+            setOrcamentos([]);
+            setItems([]);
+            // toast.error("Não foi possível carregar os dados. Verifique a conexão.");
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
 
-  const saveItems = (newItems: OrcamentoItem[]) => {
-    localStorage.setItem(ITEMS_KEY, JSON.stringify(newItems));
-    setItems(newItems);
-  };
+    // --- 3. EXECUÇÃO DA BUSCA NA MONTAGEM ---
+    useEffect(() => {
+        fetchOrcamentos();
+    }, [fetchOrcamentos]);
 
-  const addOrcamento = (
-    orcamento: Omit<Orcamento, 'id'>, 
-    selectedItems: Omit<OrcamentoItem, 'id' | 'orcamentoId'>[]
-  ) => {
-    const newOrcamento: Orcamento = {
-      ...orcamento,
-      id: Date.now().toString(),
+    // --- 4. FUNÇÕES CRUD (POST/PUT/DELETE) ---
+
+    // A. CRIAR NOVO ORÇAMENTO (POST)
+    const addOrcamento = async (
+        orcamentoData: Omit<Orcamento, 'id'>, 
+        selectedItems: { nomeItem: string, valor: string }[]
+    ) => {
+        const payload = {
+            orcamento: orcamentoData,
+            itens: selectedItems.map(item => ({ 
+                nomeItem: item.nomeItem, 
+                valor: item.valor 
+            })), 
+        };
+
+        try {
+            const response = await fetch(`${API_BASE_URL}?acao=criar`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                await fetchOrcamentos(); // Recarrega os dados do servidor
+                return result; 
+            } else {
+                console.error("Erro na criação:", result.mensagem);
+                throw new Error(result.mensagem || "Falha desconhecida ao criar.");
+            }
+        } catch (error) {
+            console.error("Erro de rede/servidor na criação:", error);
+            throw error;
+        }
     };
     
-    const newItems = selectedItems.map(item => ({
-      ...item,
-      id: `${Date.now()}-${Math.random()}`,
-      orcamentoId: newOrcamento.id,
-    }));
+    // B. ATUALIZAR ORÇAMENTO PRINCIPAL (PUT)
+    const updateOrcamento = async (id: string, updates: Partial<Orcamento>) => {
+        try {
+            const response = await fetch(`${API_BASE_URL}?acao=atualizar&id=${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updates),
+            });
 
-    saveOrcamentos([...orcamentos, newOrcamento]);
-    saveItems([...items, ...newItems]);
-  };
+            const result = await response.json();
 
-  const updateOrcamento = (id: string, updates: Partial<Orcamento>) => {
-    saveOrcamentos(
-      orcamentos.map(o => o.id === id ? { ...o, ...updates } : o)
-    );
-  };
+            if (result.success) {
+                // Atualiza o estado 
+                setOrcamentos(prevOrcamentos =>
+                    prevOrcamentos.map(o => o.id === id ? { ...o, ...updates } : o)
+                );
+                return result;
+            } else {
+                throw new Error(result.mensagem || "Falha ao atualizar orçamento.");
+            }
+        } catch (error) {
+            console.error("Erro ao atualizar orçamento:", error);
+            throw error;
+        }
+    };
 
-  const updateOrcamentoItems = (
-    orcamentoId: string,
-    updatedItems: OrcamentoItem[]
-  ) => {
-    const newList = [
-      ...items.filter(i => i.orcamentoId !== orcamentoId),
-      ...updatedItems
-    ];
+    // C. ATUALIZAR/SINCRONIZAR ITENS (PUT/POST)
+    const updateOrcamentoItems = async (
+        orcamentoId: string,
+        updatedItems: OrcamentoItem[]
+    ) => {
+         // O backend espera um payload com o array de itens
+        const payload = {
+            itens: updatedItems.map(item => ({ 
+                id: item.id, 
+                nomeItem: item.nomeItem, 
+                valor: item.valor // o valor é um numero
+            })),
+        };
 
-    saveItems(newList);
-  };
+        try {
+            const response = await fetch(`${API_BASE_URL}?acao=atualizarItens&id=${orcamentoId}`, {
+                method: 'PUT', // Ou POST, dependendo de como você mapeou no seu Router
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
 
-  const deleteOrcamento = (id: string) => {
-    saveOrcamentos(orcamentos.filter(o => o.id !== id));
-    saveItems(items.filter(i => i.orcamentoId !== id));
-  };
+            const result = await response.json();
 
-  const getOrcamentoItems = (orcamentoId: string) => {
-    return items.filter(i => i.orcamentoId === orcamentoId);
-  };
+            if (result.success) {
+                await fetchOrcamentos(); // Recarrega os dados (itens + orçamento) para sincronização completa
+                return result;
+            } else {
+                throw new Error(result.mensagem || "Falha ao sincronizar itens.");
+            }
+        } catch (error) {
+            console.error("Erro ao atualizar itens:", error);
+            throw error;
+        }
+    };
 
-  const getOrcamentoTotal = (orcamentoId: string) => {
-    return items
-      .filter(i => i.orcamentoId === orcamentoId)
-      .reduce((acc, item) => acc + item.valor, 0);
-  };
+    // D. DELETAR ORÇAMENTO (DELETE)
+    const deleteOrcamento = async (id: string) => {
+        try {
+            const response = await fetch(`${API_BASE_URL}?acao=deletar&id=${id}`, {
+                method: 'DELETE',
+            });
+            
+            const result = await response.json();
 
-  return { orcamentos, items, addOrcamento, updateOrcamento, updateOrcamentoItems, deleteOrcamento, getOrcamentoItems, getOrcamentoTotal };
+            if (result.success) {
+                // Remove do estado local para feedback instantâneo
+                setOrcamentos(orcamentos.filter(o => o.id !== id));
+                setItems(items.filter(i => i.orcamentoId !== id));
+            } else {
+                 throw new Error(result.mensagem || "Falha ao deletar orçamento.");
+            }
+        } catch (error) {
+            console.error("Erro ao deletar orçamento:", error);
+            throw error;
+        }
+    };
+    
+    // E. FUNÇÕES LOCAIS (APENAS LEITURA DE ESTADO)
+    
+    // Estas funções usam os dados já carregados no estado 'items'
+    const getOrcamentoItems = (orcamentoId: string) => {
+        return items.filter(i => i.orcamentoId === orcamentoId);
+    };
+
+    const getOrcamentoTotal = (orcamentoId: string) => {
+        return items
+            .filter(i => i.orcamentoId === orcamentoId)
+            .reduce((acc, item) => acc + item.valor, 0);
+    };
+
+    return { 
+        orcamentos, 
+        items, 
+        isLoading,
+        addOrcamento, 
+        updateOrcamento, 
+        updateOrcamentoItems, 
+        deleteOrcamento, 
+        getOrcamentoItems, 
+        getOrcamentoTotal 
+    };
 };
