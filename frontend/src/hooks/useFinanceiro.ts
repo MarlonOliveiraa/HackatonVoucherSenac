@@ -1,60 +1,111 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Financeiro } from '@/types';
 
-const STORAGE_KEY = 'financeiro';
-
-const mockFinanceiro: Financeiro[] = [
-  {
-    id: '1',
-    servicoId: '1',
-    dataPagamento: '2024-11-15',
-    valorPago: 2500,
-  },
-  {
-    id: '2',
-    servicoId: '2',
-    dataPagamento: '2024-11-20',
-    valorPago: 1200,
-  },
-];
+const API_BASE_URL = 'http://localhost/HackatonVoucherSenac/backend/router/financeiroRouter.php';
 
 export const useFinanceiro = () => {
   const [registros, setRegistros] = useState<Financeiro[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      setRegistros(JSON.parse(stored));
-    } else {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(mockFinanceiro));
-      setRegistros(mockFinanceiro);
+  // Função para buscar registros do backend
+  const fetchRegistros = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}?acao=listar`);
+      if (!response.ok) {
+        throw new Error('Falha ao buscar registros financeiros.');
+      }
+      const fetchedRegistros: Financeiro[] = await response.json();
+      // Converte id para string
+      const converted = fetchedRegistros.map(r => ({
+        ...r,
+        id: r.id.toString(),
+        valorPago: r.valorPago || 0,
+      }));
+      setRegistros(converted);
+    } catch (error) {
+      console.error("Erro ao carregar registros financeiros:", error);
+      setRegistros([]);
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
-  const saveRegistros = (newRegistros: Financeiro[]) => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newRegistros));
-    setRegistros(newRegistros);
+  // Carrega os dados na montagem
+  useEffect(() => {
+    fetchRegistros();
+  }, [fetchRegistros]);
+
+  // Adicionar registro
+  const addRegistro = async (registro: Omit<Financeiro, 'id'>) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}?acao=criar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(registro),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        await fetchRegistros(); // Recarrega os dados
+        return result;
+      } else {
+        throw new Error(result.mensagem || "Falha ao criar registro.");
+      }
+    } catch (error) {
+      console.error("Erro ao criar registro:", error);
+      throw error;
+    }
   };
 
-  const addRegistro = (registro: Omit<Financeiro, 'id'>) => {
-    const newRegistro: Financeiro = {
-      ...registro,
-      id: Date.now().toString(),
-    };
-    saveRegistros([...registros, newRegistro]);
+  // Atualizar registro
+  const updateRegistro = async (id: string, updates: Partial<Financeiro>) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}?acao=atualizar&id=${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        await fetchRegistros(); // Recarrega os dados
+        return result;
+      } else {
+        throw new Error(result.mensagem || "Falha ao atualizar registro.");
+      }
+    } catch (error) {
+      console.error("Erro ao atualizar registro:", error);
+      throw error;
+    }
   };
 
-  const updateRegistro = (id: string, updates: Partial<Financeiro>) => {
-    saveRegistros(registros.map(r => r.id === id ? { ...r, ...updates } : r));
+  // Deletar registro
+  const deleteRegistro = async (id: string) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}?acao=deletar&id=${id}`, {
+        method: 'DELETE',
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        await fetchRegistros(); // Recarrega os dados
+      } else {
+        throw new Error(result.mensagem || "Falha ao deletar registro.");
+      }
+    } catch (error) {
+      console.error("Erro ao deletar registro:", error);
+      throw error;
+    }
   };
 
-  const deleteRegistro = (id: string) => {
-    saveRegistros(registros.filter(r => r.id !== id));
-  };
-
+  // Calcular total recebido
   const getTotalRecebido = () => {
     return registros.reduce((acc, r) => acc + r.valorPago, 0);
   };
 
-  return { registros, addRegistro, updateRegistro, deleteRegistro, getTotalRecebido };
+  return { registros, isLoading, addRegistro, updateRegistro, deleteRegistro, getTotalRecebido };
 };
