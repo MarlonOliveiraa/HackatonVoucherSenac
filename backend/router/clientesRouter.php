@@ -1,31 +1,41 @@
 <?php
+require_once './db.php';
+require_once './controllers/ClienteController.php';
 
-header("Access-Control-Allow-Origin: *");
-header("Content-Type: application/json");
-header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE");
-header("Access-Control-Allow-Headers: Content-Type");
 
-require_once __DIR__ . "/../controllers/orcamentosController.php";
+$controller = new ClienteController($conn);
 
-$acao = $_GET['acao'] ?? '';
-$clientesController = new ClientesController();
 
-//pega dados do front-end
-$body = json_decode(file_get_contents('php://input'), true);
+$rota = $_GET['route'] ?? '';
+$metodo = $_SERVER['REQUEST_METHOD'];
 
-switch ($acao){
-    case 'criar':
-        if ($body){
-            $resposta = $clientesController->criar($body);
-            echo json_encode($resposta);
-        } else{
-            echo json_encode(["erro" => "Dados não informados!"]);
-        }
-        break;
-    
-    default:
-        echo json_encode(["erro" => "Ação inválida!"]);
-        break;
+
+if ($rota == 'clientes' && $metodo == 'GET') {
+$controller->index();
 }
 
+
+if ($rota == 'cliente' && $metodo == 'GET') {
+$id = $_GET['id'];
+$controller->show($id);
+}
+
+
+if ($rota == 'cliente' && $metodo == 'POST') {
+$controller->store();
+}
+
+
+if ($rota == 'cliente' && $metodo == 'PUT') {
+parse_str(file_get_contents("php://input"), $_PUT);
+$_POST = $_PUT;
+$id = $_GET['id'];
+$controller->update($id);
+}
+
+
+if ($rota == 'cliente' && $metodo == 'DELETE') {
+$id = $_GET['id'];
+$controller->destroy($id);
+}
 ?>
