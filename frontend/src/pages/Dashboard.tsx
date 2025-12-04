@@ -166,6 +166,26 @@ const Dashboard = () => {
               </CardContent>
             </Card>
 
+            {/* Total serviços */}
+            <Card className="border-0 shadow-lg card-hover bg-gradient-to-br from-primary/5 to-primary/10">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center">
+                    <TrendingUp className="h-4 w-4 text-primary" />
+                  </div>
+                  Total de Serviços Oferecidos
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold text-primary">
+                  {dashboardData.total_servicos}
+                </p>
+                <p className="text-sm text-muted-foreground mt-3">
+                  Visão geral da oferta atual de serviços
+                </p>
+              </CardContent>
+            </Card>
+
           </div>
         </div>
       </div>
