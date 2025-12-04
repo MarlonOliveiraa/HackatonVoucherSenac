@@ -103,9 +103,9 @@ export const useOrcamentos = () => {
             const result = await response.json();
 
             if (result.success) {
-                // Atualiza o estado sem recarregar tudo (para ser mais rápido)
-                setOrcamentos(
-                    orcamentos.map(o => o.id === id ? { ...o, ...updates } : o)
+                // Atualiza o estado 
+                setOrcamentos(prevOrcamentos =>
+                    prevOrcamentos.map(o => o.id === id ? { ...o, ...updates } : o)
                 );
                 return result;
             } else {
@@ -122,12 +122,12 @@ export const useOrcamentos = () => {
         orcamentoId: string,
         updatedItems: OrcamentoItem[]
     ) => {
-         // O backend espera um payload com o array de itens, incluindo IDs existentes
+         // O backend espera um payload com o array de itens
         const payload = {
             itens: updatedItems.map(item => ({ 
-                id: item.id, // Manda o ID se existir (para UPDATE) ou undefined/null (para INSERT)
+                id: item.id, 
                 nomeItem: item.nomeItem, 
-                valor: item.valor // Manda o valor como Number, o fetch converterá para JSON
+                valor: item.valor // o valor é um numero
             })),
         };
 

@@ -34,7 +34,7 @@ const Orcamentos = () => {
     dataCriacao: new Date().toISOString().split('T')[0],
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (selectedServicosItems.length === 0) {
@@ -42,33 +42,39 @@ const Orcamentos = () => {
       return;
     }
 
-    // --- LÓGICA DE EDIÇÃO (UPDATE) ---
+    // --- Editando/update ---
   if (selectOrcamento){
-    // Para edição, precisamos do formato OrcamentoItem (valor como number/float)
     const itemsParaEdicao: OrcamentoItem[] = selectedServicosItems.map(item => ({
-      id: item.id,
+      id: item.id as string,
       orcamentoId: selectOrcamento, 
       nomeItem: item.nomeItem,
-      valor: parseFloat(item.valor) || 0, // Valor como NUMBER
+      valor: parseFloat(item.valor) || 0, // numero float
     }));
 
-    updateOrcamento(selectOrcamento, formData);
-    updateOrcamentoItems(selectOrcamento, itemsParaEdicao);
-    toast.success("Orçamento atualizado!");
-    resetForm();
+    try{
+      //espera o update principal
+      await updateOrcamento(selectOrcamento, formData);
+
+      //esperando o update dos itens
+      await updateOrcamentoItems(selectOrcamento, itemsParaEdicao);
+
+      toast.success("Orçamento atualizado!");
+      resetForm();
+    } catch(error){
+      console.error("Erro na edição: ", error);
+      toast.error("Falha ao atualizar o orçamento e/ou itens. Verifique o console.");
+    }
     return;
   } 
 
-  // --- LÓGICA DE CRIAÇÃO (ADD) ---
-  
-  // Para criação, precisamos do formato simplificado que o hook espera (valor como STRING)
+
+  // --- Criando/ADD ---
   const itemsParaEnvio: { nomeItem: string, valor: string }[] = selectedServicosItems.map(item => ({
-    // Não incluímos 'id' ou 'orcamentoId' pois o backend fará a inserção
     nomeItem: item.nomeItem,
-    valor: item.valor, // Valor como STRING (ex: "100.00")
+    valor: item.valor, // valor como string
   }));
   
-  addOrcamento(formData, itemsParaEnvio); // Chamada corrigida
+  addOrcamento(formData, itemsParaEnvio);
   toast.success('Orçamento criado!');
   resetForm();
   };
@@ -101,7 +107,7 @@ const Orcamentos = () => {
       id: i.id,
       orcamentoId: i.orcamentoId,
       nomeItem: i.nomeItem,
-      valor: String(i.valor), // valor como string para os inputs
+      valor: String(i.valor), // valor como string
     }));
     setSelectedServicosItems(existingItems);
   

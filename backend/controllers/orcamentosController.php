@@ -43,14 +43,13 @@ class OrcamentoController{
     }
 
     public function atualizar($id, array $dados) {
-        // Mapeamento dos dados de atualização (apenas os campos que podem ser atualizados)
-        $updatesDB = [];
+        // Mapeamento dos dados de atualização
         if (isset($dados['clienteId'])) $updatesDB['cliente_id'] = $dados['clienteId'];
         if (isset($dados['servicoId'])) $updatesDB['servico_id'] = $dados['servicoId'];
         if (isset($dados['detalhes'])) $updatesDB['detalhes'] = $dados['detalhes'];
         if (isset($dados['tempoEstimado'])) $updatesDB['tempo_estimado'] = $dados['tempoEstimado'];
         if (isset($dados['dataCriacao'])) $updatesDB['data_criacao'] = $dados['dataCriacao'];
-        if (isset($dados['status'])) $updatesDB['status_orcamento'] = $dados['status']; // status no frontend
+        if (isset($dados['status'])) $updatesDB['status_orcamento'] = $dados['status'];
 
         $ok = OrcamentoModel::editarOrcamento($id, $updatesDB); // Use $updatesDB
         
@@ -64,32 +63,13 @@ class OrcamentoController{
     public function atualizarItens($orcamentoId, array $dados) {
         $novosItens = $dados['itens'] ?? [];
         
-        $pdo = OrcamentoModel::connect(); 
-        $pdo->beginTransaction();
-        
-        try {
-            //Obter e comparar IDs
-            $idsExistentes = OrcamentoModel::getExistingItemIds($orcamentoId);
-            $novosIds = array_filter(array_map(function($item) {
-                return (isset($item['id']) && is_numeric($item['id'])) ? (int)$item['id'] : null;
-            }, $novosItens));
-            $idsParaDeletar = array_diff($idsExistentes, $novosIds);
-            
-            //Deletar itens removidos
-            foreach ($idsParaDeletar as $itemId) {
-                OrcamentoModel::deleteItem($itemId);
-            }
-            
-            //Inserir ou atualizar itens
-            foreach ($novosItens as $item) {
-                OrcamentoModel::upsertItem($orcamentoId, $item);
-            }
-            
-            $pdo->commit();
+        // Chamamos um novo método da Model que gerencia a transação internamente
+        $resultado = OrcamentoModel::sincronizarItens($orcamentoId, $novosItens);
+
+        if ($resultado['success']) {
             return ["success" => true, "mensagem" => "Itens atualizados com sucesso."];
-        } catch (\Throwable $e) {
-            $pdo->rollBack();
-            return ["success" => false, "mensagem" => "Erro ao sincronizar itens: " . $e->getMessage()];
+        } else {
+            return ["success" => false, "mensagem" => "Erro ao sincronizar itens: " . $resultado['mensagem']];
         }
     }
 
