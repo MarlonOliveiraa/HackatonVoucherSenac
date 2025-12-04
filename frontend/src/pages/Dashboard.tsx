@@ -56,28 +56,13 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-gradient-accent">
-                R$ {Number(dashboardData.faturamento_total).toLocaleString("pt-BR")}
+                {Number(dashboardData.faturamento_total ?? 0).toLocaleString("pt-BR", {
+                    style: "currency",
+                    currency: "BRL",
+                  })}
               </div>
               <p className="text-xs text-muted-foreground mt-2">
                 Total recebido no período
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* CLIENTES ATIVOS */}
-          <Card className="border-0 shadow-lg card-hover bg-gradient-to-br from-card to-card/50 backdrop-blur">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Clientes Ativos</CardTitle>
-              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                <Users className="h-5 w-5 text-primary" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-gradient-primary">
-                {dashboardData.clientes_ativos}
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Total de clientes ativos
               </p>
             </CardContent>
           </Card>
@@ -92,7 +77,10 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-success">
-                R$ {Number(dashboardData.ticket_medio).toLocaleString("pt-BR")}
+                {Number(dashboardData.ticket_medio ?? 0).toLocaleString("pt-BR", {
+                    style: "currency",
+                    currency: "BRL",
+                  })}
               </div>
               <p className="text-xs text-muted-foreground mt-2">
                 Média por serviço concluído
@@ -100,20 +88,48 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          {/* SERVIÇO MAIS LUCRATIVO */}
+          {/* PREVISÃO DE FATURAMENTO*/}
           <Card className="border-0 shadow-lg card-hover bg-gradient-to-br from-card to-card/50 backdrop-blur">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Serviço Mais Lucrativo</CardTitle>
-              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                <Briefcase className="h-5 w-5 text-primary" />
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Previsão de Faturamento
+              </CardTitle>
+              <div className="h-10 w-10 rounded-xl bg-success/10 flex items-center justify-center">
+                <TrendingUp className="h-5 w-5 text-success" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-xl font-bold">
-                {dashboardData.servico_mais_lucrativo?.nome}
+              <div className="text-3xl font-bold">
+                {Number(dashboardData.previsaoFaturamento ?? 0).toLocaleString("pt-BR", {
+                  style: "currency",
+                  currency: "BRL",
+                })}
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                R$ {Number(dashboardData.servico_mais_lucrativo?.faturamento).toLocaleString("pt-BR")}
+                Estimativa baseada na média dos últimos meses
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* DIA DE MAIOR FATURAMENTO*/}
+          <Card className="border-0 shadow-lg card-hover bg-gradient-to-br from-card to-card/50 backdrop-blur">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Dia de Maior Faturamento
+              </CardTitle>
+              <div className="h-10 w-10 rounded-xl bg-accent/10 flex items-center justify-center">
+                <FileText className="h-5 w-5 text-accent" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-accent">
+                {["Domingo","Segunda-feira","Terça-feira","Quarta-feira","Quinta-feira","Sexta-feira","Sábado"][dashboardData.dia_maior_faturamento?.dia_semana - 1]}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                {Number(dashboardData.dia_maior_faturamento?.total ?? 0).toLocaleString("pt-BR", {
+                  style: "currency",
+                  currency: "BRL",
+                })}
               </p>
             </CardContent>
           </Card>
@@ -122,29 +138,29 @@ const Dashboard = () => {
 
 
         {/*  RESUMO INFEROR*/}
-        <div>
-          <h2 className="text-2xl font-display font-bold mb-4">Resumo</h2>
+        <div style={{marginTop: 10}}>
+          <h2 className="text-2xl font-display font-bold mb-2">Resumo</h2>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-
-            {/* DIA DE MAIOR FATURAMENTO */}
-            <Card className="border-0 shadow-lg card-hover bg-gradient-to-br from-accent/5 to-accent/10">
+            {/* CLIENTES ATIVOS*/}
+            <Card className="border-0 shadow-lg card-hover bg-gradient-to-br from-primary/5 to-primary/10">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base font-semibold flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-lg bg-accent/20 flex items-center justify-center">
-                    <FileText className="h-4 w-4 text-accent" />
+                  <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center">
+                    <Users className="h-4 w-4 text-primary" />
                   </div>
-                  Dia de Maior Faturamento
+                  Clientes Ativos
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold text-accent">
-                  {["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"][dashboardData.dia_maior_faturamento?.dia_semana]}
+                <p className="text-3xl font-bold text-primary">
+                  {dashboardData.clientes_ativos}
                 </p>
                 <p className="text-sm text-muted-foreground mt-3">
-                  R$ {Number(dashboardData.dia_maior_faturamento?.total).toLocaleString("pt-BR")}
+                  Total de clientes ativos
                 </p>
               </CardContent>
             </Card>
+
 
             {/* SERVIÇOS CONCLUÍDOS */}
             <Card className="border-0 shadow-lg card-hover bg-gradient-to-br from-primary/5 to-primary/10">
@@ -186,6 +202,21 @@ const Dashboard = () => {
               </CardContent>
             </Card>
 
+            {/* SERVIÇO MAIS LUCRATIVO*/}
+            <Card className="shadow-md rounded-2xl w-full col-span-full">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-lg font-semibold">Serviço Mais Lucrativo</CardTitle>
+                <Briefcase className="w-6 h-6 text-primary" />
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold">
+                  {dashboardData.servico_mais_lucrativo?.nome}
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  R$ {Number(dashboardData.servico_mais_lucrativo?.faturamento).toLocaleString("pt-BR")}
+                </p>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
