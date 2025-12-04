@@ -6,9 +6,7 @@ class Servico {
     private static $table = "servico";
     private static $pdo;
 
-    // =============================
-    // INICIALIZAR CONEXÃO
-    // =============================
+    // INICIALIZA CONEXÃO
     private static function connect()
     {
         if (!self::$pdo) {
@@ -18,9 +16,7 @@ class Servico {
         return self::$pdo;
     }
 
-    // =============================
-    // LISTAR TODOS
-    // =============================
+    // LISTAR TODOS SERVIÇOS
     public static function getAll() {
 
         $pdo = self::connect();
@@ -31,9 +27,7 @@ class Servico {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    // =============================
     // CRIAR SERVIÇO
-    // =============================
     public static function create($nome, $descricao) {
 
         $pdo = self::connect();
@@ -47,9 +41,7 @@ class Servico {
         return $stmt->execute([$nome, $descricao]);
     }
 
-    // =============================
     // EDITAR SERVIÇO
-    // =============================
     public static function update($id, $nome, $descricao) {
 
         $pdo = self::connect();
@@ -63,9 +55,7 @@ class Servico {
         return $stmt->execute([$nome, $descricao, $id]);
     }
 
-    // =============================
     // DELETAR SERVIÇO
-    // =============================
     public static function delete($id) {
 
         $pdo = self::connect();

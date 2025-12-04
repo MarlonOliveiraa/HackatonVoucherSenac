@@ -18,10 +18,7 @@ $data = json_decode(file_get_contents("php://input"), true);
 $method = $_SERVER["REQUEST_METHOD"];
 
 switch ($method) {
-
-    // ======================================================
     // GET – LISTAR SERVIÇOS
-    // ======================================================
     case "GET":
         try {
             $lista = Servico::getAll();
@@ -31,10 +28,7 @@ switch ($method) {
         }
     break;
 
-
-    // ======================================================
     // POST – CRIAR SERVIÇO
-    // ======================================================
     case "POST":
         $nome = $data["nome"] ?? "";
         $descricao = $data["descricao"] ?? "";
@@ -57,10 +51,7 @@ switch ($method) {
         }
     break;
 
-
-    // ======================================================
     // PUT – ATUALIZAR SERVIÇO
-    // ======================================================
     case "PUT":
         $id = $_GET["id"] ?? null;
 
@@ -89,10 +80,7 @@ switch ($method) {
         }
     break;
 
-
-    // ======================================================
     // DELETE – EXCLUIR SERVIÇO
-    // ======================================================
     case "DELETE":
         $id = $_GET["id"] ?? null;
 
@@ -115,7 +103,6 @@ switch ($method) {
     break;
 
 
-    // ======================================================
     default:
         response(false, "Método inválido");
 }

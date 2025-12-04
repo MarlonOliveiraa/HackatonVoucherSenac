@@ -7,9 +7,7 @@ export const useServicos = () => {
   const [servicos, setServicos] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // =====================================
-  // GET - LISTAR
-  // =====================================
+  // GET - LISTA OS SERVIÇOS
   const fetchServicos = async () => {
     try {
       setLoading(true);
@@ -38,9 +36,7 @@ export const useServicos = () => {
     }
   };
 
-  // =====================================
-  // POST - CRIAR
-  // =====================================
+  // POST - CRIA UM SERVIÇO
   const addServico = async (dados) => {
     try {
       setLoading(true);
@@ -71,9 +67,7 @@ export const useServicos = () => {
     }
   };
 
-  // =====================================
-  // PUT - EDITAR
-  // =====================================
+  // PUT - EDITA UM SERVIÇO
   const updateServico = async (id, dados) => {
     try {
       setLoading(true);
@@ -104,9 +98,7 @@ export const useServicos = () => {
     }
   };
 
-  // =====================================
-  // DELETE
-  // =====================================
+  // DELETA UM SERVIÇO
   const deleteServico = async (id) => {
     try {
       setLoading(true);
