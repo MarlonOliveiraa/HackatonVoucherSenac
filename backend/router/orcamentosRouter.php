@@ -20,34 +20,37 @@ $acao = $_GET['acao'] ?? null;
 $id = $_GET['id'] ?? null;
 
 $dados = [];
-// Lê os dados do corpo da requisição JSON (para POST/PUT)
+// Lê os dados da requisição JSON
 if ($method == 'POST' || $method == 'PUT') {
     $json = file_get_contents("php://input");
     $dados = json_decode($json, true) ?? [];
 }
 
 $resposta = ["success" => false, "mensagem" => "Ação não reconhecida."];
-$statusCode = 200; // Começamos com sucesso
+$statusCode = 200; 
 
-// --- 3. ROTEAMENTO (SWITCH) ---
 try {
     switch ($acao) {
         
+        //Listar os orçamentos
         case 'listar':
             $resposta = $controller->getAll();
             break;
 
+        //Pehar os itens do orçamento
         case 'itens':
             if (!$id) { $statusCode = 400; $resposta['mensagem'] = "ID necessário para listar itens."; break; }
             $resposta = $controller->getItens($id);
             break;
 
+        //Criar orçamento
         case 'criar':
             if ($method != 'POST') { $statusCode = 405; break; }
             $resposta = $controller->criar($dados);
             $statusCode = $resposta['success'] ? 201 : 422; // 201 Created ou 422 Unprocessable Entity
             break;
 
+        //Atualizar o orçamento
         case 'atualizar':
             if (($method != 'POST' && $method != 'PUT') || !$id) { 
                 $statusCode = 405;
@@ -55,29 +58,33 @@ try {
             }
             $resposta = $controller->atualizar($id, $dados);
             break;
-            
+        
+        //atualizar os itens
         case 'atualizarItens':
             if (($method != 'POST' && $method != 'PUT') || !$id) { $statusCode = 405; break; }
             $resposta = $controller->atualizarItens($id, $dados);
             break;
             
+        //deletar o orçamento
         case 'deletar':
             if (($method != 'DELETE' && $method != 'GET') || !$id) { $statusCode = 405; break; }
             $resposta = $controller->deletar($id);
             break;
 
+        //se nenhuma das opções acima forem chamadas, vem o default
         default:
             $statusCode = 404; // Not Found
             $resposta['mensagem'] = "Recurso não encontrado ou ação inválida.";
             break;
     }
 
+//Tratamento de erro
 } catch (\Throwable $e) {
     $statusCode = 500; // Internal Server Error
     $resposta = ["success" => false, "mensagem" => "Erro interno no servidor: " . $e->getMessage()];
 }
 
-// --- 4. SAÍDA FINAL ---
+
 http_response_code($statusCode);
 echo json_encode($resposta);
 

@@ -58,7 +58,7 @@ class OrcamentoModel{
         try {
             $pdo->beginTransaction();
 
-            // 1. Inserir Orçamento Principal
+            // Inserir o orçamento
             $stmt = $pdo->prepare("INSERT INTO orcamento 
                                     (cliente_id, servico_id, detalhes, tempo_estimado, data_criacao, status_orcamento)
                                     VALUES (?, ?, ?, ?, ?, ?)");
@@ -74,7 +74,7 @@ class OrcamentoModel{
 
             $orcamentoId = $pdo->lastInsertId();
 
-            // 2. Inserir Itens do Orçamento
+            // Inserir os itens do orçamento
             foreach ($itensData as $item) {
                 self::criarItem($orcamentoId, $item['nomeItem'], $item['valor']);
             }
@@ -87,7 +87,7 @@ class OrcamentoModel{
         }
     }
 
-   //Criar um item
+   // Criar um item
     public static function criarItem($orcamentoId, $nomeItem, $valor) {
         $pdo = self::connect();
 
@@ -99,7 +99,7 @@ class OrcamentoModel{
         return $stmt->execute([$orcamentoIdInt, $nomeItem, $valorFloat]);
     }
 
-    //Editar Orçamento
+    //Editar o orçamento
     public static function editarOrcamento($id, array $body){
         $pdo = self::connect();
 
@@ -110,7 +110,7 @@ class OrcamentoModel{
         $setClauses = [];
         $params = [];
 
-        //Mapeamento inverso para garantir que o nome no db seja utilizado
+        //Mapeamento inverso para garantir que o nome no banco de dados seja utilizado
         $columnMap = [
             'cliente_id' => 'cliente_id',
             'servico_id' => 'servico_id',
@@ -135,14 +135,14 @@ class OrcamentoModel{
 
     }
 
-    //Deletar item
+    //Deletar um item
     public static function deleteItem($itemId){
         $pdo = self::connect();
         $stmt = $pdo->prepare("DELETE FROM orcamento_itens WHERE id = ?");
         return $stmt->execute([$itemId]);
     }
 
-    //Obter id existente
+    //Obter um id existente
     public static function getExistingItemIds($orcamentoId){
         $pdo = self::connect();
         $stmt = $pdo->prepare("SELECT id FROM orcamento_itens WHERE orcamento_id = ?");
@@ -150,14 +150,14 @@ class OrcamentoModel{
         return $stmt->fetchAll(PDO::FETCH_COLUMN);
     }
 
-    // Sincroniza (adiciona, edita, deleta) os itens em uma transação segura
+    // Adiciona, edita e deleta os itens em uma transação segura
     public static function sincronizarItens($orcamentoId, array $novosItens){
-        $pdo = self::connect(); // Agora funciona, pois é chamado de dentro da Model
+        $pdo = self::connect();
         
         try {
             $pdo->beginTransaction();
 
-            // Obter e comparar IDs
+            // Obter e comparar os id
             $idsExistentes = self::getExistingItemIds($orcamentoId);
             $novosIds = array_filter(array_map(function($item) {
                 return (isset($item['id']) && is_numeric($item['id'])) ? (int)$item['id'] : null;
@@ -202,7 +202,7 @@ class OrcamentoModel{
         }
     }
 
-    //Detelatar Orçamento
+    //Detelatar o Orçamento
     public static function deletarOrcamento($id){
         $pdo = self::connect();
         try {
@@ -218,7 +218,8 @@ class OrcamentoModel{
             
             $pdo->commit();
             return true;
-        } catch (\Throwable $e) { // Usar \Throwable para capturar Exceptions e Errors
+        //Tratamento de erro
+        } catch (\Throwable $e) {
             $pdo->rollBack();
             return false;
         }
