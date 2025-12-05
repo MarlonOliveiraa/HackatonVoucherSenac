@@ -7,7 +7,8 @@ import {
   FileText, 
   DollarSign,
   LogOut,
-  Menu
+  Menu,
+  ChevronRight
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -68,7 +69,10 @@ export const Layout = ({ children }: LayoutProps) => {
       </nav>
 
       <div className="border-t p-4 bg-muted/30">
-        <div className="flex items-center gap-3 mb-3 p-2 rounded-lg hover:bg-secondary/50 transition-colors">
+        <Link 
+          to="/perfil"
+          className="flex items-center gap-3 mb-3 p-2 rounded-lg hover:bg-secondary/50 transition-colors group"
+        >
           <div className="h-10 w-10 rounded-full bg-gradient-primary flex items-center justify-center shadow-md">
             <span className="text-sm font-bold text-white">
               {user?.name?.[0]?.toUpperCase()}
@@ -78,7 +82,8 @@ export const Layout = ({ children }: LayoutProps) => {
             <p className="text-sm font-semibold truncate">{user?.name}</p>
             <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
           </div>
-        </div>
+          <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+        </Link>
         <Button 
           variant="outline" 
           size="sm" 
@@ -123,7 +128,10 @@ export const Layout = ({ children }: LayoutProps) => {
           })}
         </nav>
         <div className="border-t p-4 bg-muted/30">
-          <div className="flex items-center gap-3 mb-3 p-2 rounded-lg hover:bg-secondary/50 transition-colors">
+          <Link 
+            to="/perfil"
+            className="flex items-center gap-3 mb-3 p-2 rounded-lg hover:bg-secondary/50 transition-colors group"
+          >
             <div className="h-10 w-10 rounded-full bg-gradient-primary flex items-center justify-center shadow-md">
               <span className="text-sm font-bold text-white">
                 {user?.name?.[0]?.toUpperCase()}
@@ -133,7 +141,8 @@ export const Layout = ({ children }: LayoutProps) => {
               <p className="text-sm font-semibold truncate">{user?.name}</p>
               <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
             </div>
-          </div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+          </Link>
           <Button 
             variant="outline" 
             size="sm" 

@@ -12,15 +12,19 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2, FileText, Check, X } from 'lucide-react';
+import { Plus, Trash2, Edit, FileText, Check, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { OrcamentoItem } from '@/types';
 
 const Orcamentos = () => {
-  const { orcamentos, addOrcamento, updateOrcamento, deleteOrcamento, getOrcamentoItems, getOrcamentoTotal } = useOrcamentos();
+  const { orcamentos, addOrcamento, updateOrcamento, updateOrcamentoItems, deleteOrcamento, getOrcamentoItems, getOrcamentoTotal } = useOrcamentos();
   const { clientes } = useClientes();
   const { servicos } = useServicos();
   const [open, setOpen] = useState(false);
-  const [selectedServicosItems, setSelectedServicosItems] = useState<{servicoId: string, valor: string}[]>([]);
+  const [selectOrcamento, setSelectOrcamento] = useState<string | null>(null);
+  const [selectedServicosItems, setSelectedServicosItems] = useState<
+    {id?: string; orcamentoId?: string; nomeItem: string; valor?: string}[]
+  >([]);
   const [formData, setFormData] = useState({
     clienteId: '',
     servicoId: '',
@@ -30,7 +34,7 @@ const Orcamentos = () => {
     dataCriacao: new Date().toISOString().split('T')[0],
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (selectedServicosItems.length === 0) {
@@ -38,14 +42,41 @@ const Orcamentos = () => {
       return;
     }
 
-    const items = selectedServicosItems.map(item => ({
-      servicoId: item.servicoId,
-      valor: parseFloat(item.valor) || 0,
+    // --- Editando/update ---
+  if (selectOrcamento){
+    const itemsParaEdicao: OrcamentoItem[] = selectedServicosItems.map(item => ({
+      id: item.id as string,
+      orcamentoId: selectOrcamento, 
+      nomeItem: item.nomeItem,
+      valor: parseFloat(item.valor) || 0, // numero float
     }));
 
-    addOrcamento(formData, items);
-    toast.success('Orçamento criado!');
-    resetForm();
+    try{
+      //espera o update principal
+      await updateOrcamento(selectOrcamento, formData);
+
+      //esperando o update dos itens
+      await updateOrcamentoItems(selectOrcamento, itemsParaEdicao);
+
+      toast.success("Orçamento atualizado!");
+      resetForm();
+    } catch(error){
+      console.error("Erro na edição: ", error);
+      toast.error("Falha ao atualizar o orçamento e/ou itens. Verifique o console.");
+    }
+    return;
+  } 
+
+
+  // --- Criando/ADD ---
+  const itemsParaEnvio: { nomeItem: string, valor: string }[] = selectedServicosItems.map(item => ({
+    nomeItem: item.nomeItem,
+    valor: item.valor, // valor como string
+  }));
+  
+  addOrcamento(formData, itemsParaEnvio);
+  toast.success('Orçamento criado!');
+  resetForm();
   };
 
   const resetForm = () => {
@@ -58,7 +89,30 @@ const Orcamentos = () => {
       dataCriacao: new Date().toISOString().split('T')[0],
     });
     setSelectedServicosItems([]);
+    setSelectOrcamento(null);
     setOpen(false);
+  };
+
+  const handleEdit = (orcamento: any) => {
+    setFormData({
+      clienteId: orcamento.clienteId,
+      servicoId: orcamento.servicoId,
+      detalhes: orcamento.detalhes,
+      tempoEstimado: orcamento.tempoEstimado,
+      status: orcamento.status,
+      dataCriacao: orcamento.dataCriacao?.split('T')[0] ?? new Date().toISOString().split('T')[0],
+    });
+
+    const existingItems = getOrcamentoItems(orcamento.id).map(i => ({
+      id: i.id,
+      orcamentoId: i.orcamentoId,
+      nomeItem: i.nomeItem,
+      valor: String(i.valor), // valor como string
+    }));
+    setSelectedServicosItems(existingItems);
+  
+    setSelectOrcamento(orcamento.id);
+    setOpen(true);
   };
 
   const handleDelete = (id: string) => {
@@ -77,10 +131,10 @@ const Orcamentos = () => {
   };
 
   const addServicoItem = () => {
-    setSelectedServicosItems([...selectedServicosItems, { servicoId: '', valor: '' }]);
+    setSelectedServicosItems([...selectedServicosItems, { nomeItem: '', valor: '' }]);
   };
 
-  const updateServicoItem = (index: number, field: 'servicoId' | 'valor', value: string) => {
+  const updateServicoItem = (index: number, field: 'nomeItem' | 'valor', value: string) => {
     const updated = [...selectedServicosItems];
     updated[index][field] = value;
     setSelectedServicosItems(updated);
@@ -218,21 +272,15 @@ const Orcamentos = () => {
                   <div className="space-y-2">
                     {selectedServicosItems.map((item, index) => (
                       <div key={index} className="flex gap-2 items-center">
-                        <Select
-                          value={item.servicoId}
-                          onValueChange={(value) => updateServicoItem(index, 'servicoId', value)}
-                        >
-                          <SelectTrigger className="flex-1">
-                            <SelectValue placeholder="Serviço" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {servicos.map((servico) => (
-                              <SelectItem key={servico.id} value={servico.id}>
-                                {servico.nome}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        {/*Campo de texto livre*/}
+                        <Input
+                          type='text'
+                          placeholder='Descrição do Item'
+                          value={item.nomeItem}
+                          onChange={(e) => updateServicoItem(index, 'nomeItem', e.target.value)}
+                          className='flex-1'
+                        />
+                        {/* Valor */}
                         <Input
                           type="number"
                           step="0.01"
@@ -288,7 +336,8 @@ const Orcamentos = () => {
                       </div>
                       <div>
                         <CardTitle className="text-lg font-bold">
-                          {getServicoNome(orcamento.servicoId)}
+                        {getServicoNome(orcamento.servicoId)}
+
                         </CardTitle>
                         <CardDescription className="mt-1 font-medium">
                           {getClienteNome(orcamento.clienteId)}
@@ -329,7 +378,7 @@ const Orcamentos = () => {
                       </div>
                     )}
                   </div>
-                  {items.length > 0 && (
+                  {items.length > 0 ? (
                     <div className="border-t pt-3">
                       <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Itens</p>
                       <ul className="text-sm space-y-1.5">
@@ -337,7 +386,7 @@ const Orcamentos = () => {
                           <li key={item.id} className="flex items-center justify-between text-foreground">
                             <span className="flex items-center gap-2">
                               <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                              {getServicoNome(item.servicoId)}
+                              {item.nomeItem?.trim() || "Item sem descrição"}
                             </span>
                             <span className="text-muted-foreground">
                               R$ {item.valor.toLocaleString('pt-BR')}
@@ -346,8 +395,11 @@ const Orcamentos = () => {
                         ))}
                       </ul>
                     </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground italic">Sem itens cadastrados</p>
                   )}
                   <div className="flex gap-2 pt-2">
+                    {/* Botão aprovado */}
                     {orcamento.status === 'pendente' && (
                       <Button
                         size="sm"
@@ -362,6 +414,32 @@ const Orcamentos = () => {
                         Aprovar
                       </Button>
                     )}
+                    {/* Botão cancelar */}
+                    {orcamento.status === 'pendente' &&(
+                      <Button
+                        size='sm'
+                        variant='outline'
+                        className='flex-1 hover:bg-destructive/80 hover:text-destructive-foreground hover:border-destructive transition-colors'
+                        onClick={() => {
+                          updateOrcamento(orcamento.id, { status: 'cancelado'});
+                          toast.error('Orçamento cancelado!');
+                        }}
+                        >
+                          Cancelar
+                      </Button>
+                    )}
+                    {/* Botão editar */}
+                    {orcamento.status !== 'cancelado' && (
+                      <Button
+                        size='sm'
+                        variant='outline'
+                        className='hover:bg-primary/10 hover:text-primary'
+                        onClick={() => handleEdit(orcamento)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    )}
+                    
                     <Button
                       size="sm"
                       variant="outline"
