@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Layout } from '@/components/Layout';
 import { useFinanceiro } from '@/hooks/useFinanceiro';
-import { useServicos } from '@/hooks/useServicos';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,10 +12,26 @@ import { Plus, Edit, Trash2, DollarSign, TrendingUp, Calendar } from 'lucide-rea
 import { toast } from 'sonner';
 
 const Financeiro = () => {
-  const { registros, addRegistro, updateRegistro, deleteRegistro, getTotalRecebido } = useFinanceiro();
-  const { servicos } = useServicos();
+  // ✅ Chamar o hook UMA VEZ apenas
+  const {
+    registros,
+    addRegistro,
+    updateRegistro,
+    deleteRegistro,
+    getTotalRecebido
+  } = useFinanceiro();
+
   const [open, setOpen] = useState(false);
   const [selectedRegistro, setSelectedRegistro] = useState<string | null>(null);
+
+  const servicos = [
+  { id: "1", nome: "Corte de Cabelo" },
+  { id: "2", nome: "Manutenção" },
+  { id: "3", nome: "Consultoria" },
+];
+
+
+  // ✅ Corrigido servicoId
   const [formData, setFormData] = useState({
     servicoId: '',
     dataPagamento: new Date().toISOString().split('T')[0],
@@ -24,11 +40,12 @@ const Financeiro = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
     const data = {
       ...formData,
       valorPago: parseFloat(formData.valorPago),
     };
-    
+
     if (selectedRegistro) {
       updateRegistro(selectedRegistro, data);
       toast.success('Registro atualizado!');
@@ -36,6 +53,7 @@ const Financeiro = () => {
       addRegistro(data);
       toast.success('Pagamento registrado!');
     }
+
     resetForm();
   };
 
@@ -70,6 +88,7 @@ const Financeiro = () => {
     return servicos.find(s => s.id === servicoId)?.nome || 'Serviço não encontrado';
   };
 
+
   const totalRecebido = getTotalRecebido();
 
   return (
@@ -93,7 +112,9 @@ const Financeiro = () => {
                   {selectedRegistro ? 'Editar Pagamento' : 'Novo Pagamento'}
                 </DialogTitle>
               </DialogHeader>
+
               <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Serviço */}
                 <div className="space-y-2">
                   <Label htmlFor="servicoId">Serviço</Label>
                   <Select
@@ -113,6 +134,8 @@ const Financeiro = () => {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* Valor */}
                 <div className="space-y-2">
                   <Label htmlFor="valorPago">Valor Pago (R$)</Label>
                   <Input
@@ -124,6 +147,8 @@ const Financeiro = () => {
                     required
                   />
                 </div>
+
+                {/* Data */}
                 <div className="space-y-2">
                   <Label htmlFor="dataPagamento">Data do Pagamento</Label>
                   <Input
@@ -133,6 +158,7 @@ const Financeiro = () => {
                     onChange={(e) => setFormData({ ...formData, dataPagamento: e.target.value })}
                   />
                 </div>
+
                 <Button type="submit" className="w-full">
                   {selectedRegistro ? 'Atualizar' : 'Registrar Pagamento'}
                 </Button>
@@ -141,7 +167,7 @@ const Financeiro = () => {
           </Dialog>
         </div>
 
-        {/* Card de Total */}
+        {/* Total */}
         <Card className="border-0 shadow-lg bg-gradient-to-br from-accent/10 to-accent/5">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Total Recebido</CardTitle>
@@ -159,10 +185,12 @@ const Financeiro = () => {
           </CardContent>
         </Card>
 
+        {/* Cards */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {registros.map((registro) => (
             <Card key={registro.id} className="card-hover border-0 shadow-lg overflow-hidden group bg-gradient-to-br from-card to-card/50">
               <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-accent opacity-5 rounded-full -mr-16 -mt-16 group-hover:opacity-10 transition-opacity" />
+
               <CardHeader className="relative">
                 <div className="flex items-start gap-3">
                   <div className="h-12 w-12 rounded-xl bg-gradient-accent flex items-center justify-center shadow-md">
@@ -182,12 +210,14 @@ const Financeiro = () => {
                   </div>
                 </div>
               </CardHeader>
+
               <CardContent className="space-y-4 relative">
                 <div className="bg-gradient-accent rounded-xl p-4 shadow-md">
                   <div className="text-3xl font-bold text-white">
-                    R$ {registro.valorPago.toLocaleString('pt-BR')}
+                    R$ {Number(registro.valorPago || 0).toLocaleString('pt-BR')}
                   </div>
                 </div>
+
                 <div className="flex gap-2 pt-2">
                   <Button
                     size="sm"

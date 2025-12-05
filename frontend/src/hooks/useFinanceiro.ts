@@ -1,60 +1,107 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Financeiro } from '@/types';
+import { toast } from 'sonner';
 
-const STORAGE_KEY = 'financeiro';
-
-const mockFinanceiro: Financeiro[] = [
-  {
-    id: '1',
-    servicoId: '1',
-    dataPagamento: '2024-11-15',
-    valorPago: 2500,
-  },
-  {
-    id: '2',
-    servicoId: '2',
-    dataPagamento: '2024-11-20',
-    valorPago: 1200,
-  },
-];
+const API_URL = "http://localhost/hackatonvouchersenac/backend/router/financeiroRouter.php";
 
 export const useFinanceiro = () => {
   const [registros, setRegistros] = useState<Financeiro[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchRegistros = async () => {
+    try {
+      const res = await fetch(`${API_URL}?acao=listar`);
+      const data = await res.json();
+
+      if (data.success) {
+        setRegistros(data.data);
+      } else {
+        toast.error(data.message || "Erro ao carregar registros");
+      }
+    } catch (error) {
+      toast.error("Erro ao conectar ao servidor");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      setRegistros(JSON.parse(stored));
-    } else {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(mockFinanceiro));
-      setRegistros(mockFinanceiro);
-    }
+    fetchRegistros();
   }, []);
 
-  const saveRegistros = (newRegistros: Financeiro[]) => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newRegistros));
-    setRegistros(newRegistros);
+  const addRegistro = async (registro: Omit<Financeiro, 'id'>) => {
+    try {
+      const res = await fetch(`${API_URL}?acao=criar`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(registro),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        toast.success("Registro criado!");
+        fetchRegistros();
+      } else {
+        toast.error(data.message || "Erro ao criar registro");
+      }
+    } catch {
+      toast.error("Erro ao conectar ao servidor");
+    }
   };
 
-  const addRegistro = (registro: Omit<Financeiro, 'id'>) => {
-    const newRegistro: Financeiro = {
-      ...registro,
-      id: Date.now().toString(),
-    };
-    saveRegistros([...registros, newRegistro]);
+  const updateRegistro = async (id: string, updates: Partial<Financeiro>) => {
+    try {
+      const res = await fetch(`${API_URL}?acao=atualizar&id=${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        toast.success("Registro atualizado!");
+        fetchRegistros();
+      } else {
+        toast.error(data.message || "Erro ao atualizar registro");
+      }
+    } catch {
+      toast.error("Erro ao conectar ao servidor");
+    }
   };
 
-  const updateRegistro = (id: string, updates: Partial<Financeiro>) => {
-    saveRegistros(registros.map(r => r.id === id ? { ...r, ...updates } : r));
+  const deleteRegistro = async (id: string) => {
+    if (!confirm("Tem certeza?")) return;
+
+    try {
+      const res = await fetch(`${API_URL}?acao=deletar&id=${id}`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        toast.success("Registro excluído!");
+        fetchRegistros();
+      } else {
+        toast.error(data.message || "Erro ao excluir registro");
+      }
+    } catch {
+      toast.error("Erro ao conectar ao servidor");
+    }
   };
 
-  const deleteRegistro = (id: string) => {
-    saveRegistros(registros.filter(r => r.id !== id));
-  };
+  const getTotalRecebido = () =>
+    registros.reduce((a, b) => a + Number(b.valorPago || 0), 0);
 
-  const getTotalRecebido = () => {
-    return registros.reduce((acc, r) => acc + r.valorPago, 0);
+  return {
+    registros,
+    loading,
+    addRegistro,
+    updateRegistro,
+    deleteRegistro,
+    getTotalRecebido,
+    fetchRegistros,
   };
-
-  return { registros, addRegistro, updateRegistro, deleteRegistro, getTotalRecebido };
 };
